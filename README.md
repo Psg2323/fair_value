@@ -26,8 +26,8 @@
 
 | 데이터       | 출처                        | 수집 방식              | 활용               |
 | --------- | ------------------------- | ------------------ | ---------------- |
-| 과거 주가     | 한국투자은행 Open API / Market API | Batch              | OHLCV, 수익률, 기술지표 |
-| 국내 실시간 체결 | 한국투자은행 WebSocket             | Realtime Streaming | 실시간 가격·거래량 분석    |
+| 과거 주가     | 한국투자증권 Open API / Market API | Batch              | OHLCV, 수익률, 기술지표 |
+| 국내 실시간 체결 | 한국투자증권 WebSocket             | Realtime Streaming | 실시간 가격·거래량 분석    |
 | 국내 재무제표   | OpenDART                  | Batch              | 삼성전자·SK하이닉스 가치평가 |
 | 해외 재무제표   | SEC EDGAR                 | Batch              | 해외 반도체 기업 가치평가   |
 | 국내 뉴스     | 네이버 뉴스 검색 API             | Micro-Batch        | 기업 뉴스 및 감성 분석    |
