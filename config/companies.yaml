@@ -1,0 +1,16 @@
+companies:
+  samsung_electronics:
+    name_ko: 삼성전자
+    name_en: Samsung Electronics
+    ticker: "005930"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+
+  sk_hynix:
+    name_ko: SK하이닉스
+    name_en: SK hynix
+    ticker: "000660"
+    exchange: KRX
+    currency: KRW
+    enabled: true
