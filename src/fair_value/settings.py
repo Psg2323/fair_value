@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     kis_account_number: SecretStr = SecretStr("")
     kis_account_product_code: str = "01"
 
+    opendart_api_key: SecretStr = SecretStr("")
+
     @property
     def kis_base_url(self) -> str:
         """실전 또는 모의투자 REST API 주소를 반환합니다."""

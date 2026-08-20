@@ -3,6 +3,7 @@ companies:
     name_ko: 삼성전자
     name_en: Samsung Electronics
     ticker: "005930"
+    opendart_corp_code: "00126380"
     exchange: KRX
     currency: KRW
     enabled: true
@@ -11,6 +12,7 @@ companies:
     name_ko: SK하이닉스
     name_en: SK hynix
     ticker: "000660"
+    opendart_corp_code: "00164779"
     exchange: KRX
     currency: KRW
     enabled: true

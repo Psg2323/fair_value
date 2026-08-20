@@ -15,6 +15,8 @@ class CompanyConfig(BaseModel):
     exchange: str
     currency: str
     enabled: bool = True
+    opendart_corp_code: str
+
 
 
 class CompaniesConfig(BaseModel):
