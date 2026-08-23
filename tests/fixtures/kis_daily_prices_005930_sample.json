@@ -1,0 +1,23 @@
+{
+  "source": "kis",
+  "ticker": "005930",
+  "adjusted": true,
+  "start_date": "2026-08-04",
+  "end_date": "2026-08-20",
+  "collected_at": "2026-08-20T10:40:19.596259+00:00",
+  "record_count": 12,
+  "records": [
+    {"stck_bsop_date":"20260804","stck_clpr":"240000","stck_oprc":"244500","stck_hgpr":"244500","stck_lwpr":"228000","acml_vol":"29433821","acml_tr_pbmn":"6922844531100","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"500","revl_issu_reas":""},
+    {"stck_bsop_date":"20260805","stck_clpr":"246000","stck_oprc":"254000","stck_hgpr":"254500","stck_lwpr":"244000","acml_vol":"22577128","acml_tr_pbmn":"5610076087593","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"6000","revl_issu_reas":""},
+    {"stck_bsop_date":"20260806","stck_clpr":"230500","stck_oprc":"241500","stck_hgpr":"246000","stck_lwpr":"228000","acml_vol":"26101823","acml_tr_pbmn":"6091288502000","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"5","prdy_vrss":"-15500","revl_issu_reas":""},
+    {"stck_bsop_date":"20260807","stck_clpr":"231000","stck_oprc":"235000","stck_hgpr":"239500","stck_lwpr":"229000","acml_vol":"20546010","acml_tr_pbmn":"4791580972001","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"500","revl_issu_reas":""},
+    {"stck_bsop_date":"20260810","stck_clpr":"230000","stck_oprc":"236000","stck_hgpr":"238500","stck_lwpr":"228500","acml_vol":"16327805","acml_tr_pbmn":"3783527758000","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"5","prdy_vrss":"-1000","revl_issu_reas":""},
+    {"stck_bsop_date":"20260811","stck_clpr":"239500","stck_oprc":"229500","stck_hgpr":"243000","stck_lwpr":"227500","acml_vol":"23310969","acml_tr_pbmn":"5537944545490","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"9500","revl_issu_reas":""},
+    {"stck_bsop_date":"20260812","stck_clpr":"255500","stck_oprc":"243500","stck_hgpr":"260500","stck_lwpr":"241000","acml_vol":"27102479","acml_tr_pbmn":"6868918179750","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"16000","revl_issu_reas":""},
+    {"stck_bsop_date":"20260813","stck_clpr":"268000","stck_oprc":"267500","stck_hgpr":"271000","stck_lwpr":"262500","acml_vol":"35530867","acml_tr_pbmn":"9517753428321","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"12500","revl_issu_reas":""},
+    {"stck_bsop_date":"20260814","stck_clpr":"274500","stck_oprc":"275000","stck_hgpr":"275500","stck_lwpr":"266000","acml_vol":"21669476","acml_tr_pbmn":"5874450961500","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"6500","revl_issu_reas":""},
+    {"stck_bsop_date":"20260818","stck_clpr":"268500","stck_oprc":"283000","stck_hgpr":"288000","stck_lwpr":"265000","acml_vol":"24464621","acml_tr_pbmn":"6742432203720","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"5","prdy_vrss":"-6000","revl_issu_reas":""},
+    {"stck_bsop_date":"20260819","stck_clpr":"247500","stck_oprc":"251500","stck_hgpr":"254500","stck_lwpr":"246500","acml_vol":"22788552","acml_tr_pbmn":"5682871706750","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"5","prdy_vrss":"-21000","revl_issu_reas":""},
+    {"stck_bsop_date":"20260820","stck_clpr":"271000","stck_oprc":"257000","stck_hgpr":"273000","stck_lwpr":"252500","acml_vol":"26095919","acml_tr_pbmn":"6961393123500","flng_cls_code":"00","prtt_rate":"0.00","mod_yn":"N","prdy_vrss_sign":"2","prdy_vrss":"23500","revl_issu_reas":""}
+  ]
+}

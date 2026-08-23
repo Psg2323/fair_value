@@ -1,8 +1,7 @@
 import typer
-from fair_value.logging_config import configure_logging
 
 from fair_value import __version__
-
+from fair_value.logging_config import configure_logging
 
 app = typer.Typer(
     name="fair-value",

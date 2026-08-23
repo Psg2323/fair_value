@@ -1,0 +1,1 @@
+"""KOSIS statistics collectors."""

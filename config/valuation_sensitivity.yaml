@@ -1,0 +1,9 @@
+# One-at-a-time research alternatives. These are diagnostics, not tuned parameters.
+version: research_v1
+forecast_years: [3, 7]
+retention_ratios: [0.30, 0.70]
+maximum_cycle_roe_adjustments: [0.00, 0.04]
+equity_risk_premium_deltas: [-0.01, 0.01]
+
+# Assumptions stay fixed; each later calendar year is an evaluation fold.
+initial_training_years: 3

@@ -1,0 +1,8 @@
+corporate_actions:
+  - ticker: "005930"
+    action_type: stock_split
+    effective_date: 2018-05-04
+    share_multiplier: 50.0
+    source_name: Samsung Electronics IR
+    source_url: https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.71265/
+    note: New split-adjusted shares began trading on the effective date.

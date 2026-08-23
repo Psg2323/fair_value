@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import cast
 
@@ -8,13 +8,9 @@ from fair_value.collectors.kis.client import KISAPIError, KISClient
 from fair_value.storage.local import LocalStorage
 from fair_value.storage.paths import DataLayer
 
-
 logger = logging.getLogger(__name__)
 
-DAILY_PRICE_PATH = (
-    "/uapi/domestic-stock/v1/quotations/"
-    "inquire-daily-itemchartprice"
-)
+DAILY_PRICE_PATH = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice"
 DAILY_PRICE_TR_ID = "FHKST03010100"
 
 
@@ -32,7 +28,7 @@ def fetch_daily_prices_page(
         "FID_INPUT_DATE_1": start_date.strftime("%Y%m%d"),
         "FID_INPUT_DATE_2": end_date.strftime("%Y%m%d"),
         "FID_PERIOD_DIV_CODE": "D",
-        "FID_ORG_ADJ_PRC": "1" if adjusted else "0",
+        "FID_ORG_ADJ_PRC": "0" if adjusted else "1",
     }
 
     payload = client.get(
@@ -46,11 +42,7 @@ def fetch_daily_prices_page(
     if not isinstance(output, list):
         raise KISAPIError("KIS 일봉 응답에 output2 목록이 없습니다.")
 
-    return [
-        cast(dict[str, object], row)
-        for row in output
-        if isinstance(row, dict)
-    ]
+    return [cast(dict[str, object], row) for row in output if isinstance(row, dict)]
 
 
 def fetch_daily_prices(
@@ -124,10 +116,7 @@ def fetch_daily_prices(
         current_end = next_end
         time.sleep(request_delay)
 
-    return [
-        records_by_date[date_text]
-        for date_text in sorted(records_by_date)
-    ]
+    return [records_by_date[date_text] for date_text in sorted(records_by_date)]
 
 
 def _fetch_page_with_retry(
@@ -188,15 +177,12 @@ def collect_daily_prices(
         "adjusted": True,
         "start_date": start_date.isoformat(),
         "end_date": end_date.isoformat(),
-        "collected_at": datetime.now(timezone.utc).isoformat(),
+        "collected_at": datetime.now(UTC).isoformat(),
         "record_count": len(records),
         "records": records,
     }
 
-    relative_path = (
-        f"kis/daily_prices/{ticker}/"
-        f"{start_date:%Y%m%d}_{end_date:%Y%m%d}.json"
-    )
+    relative_path = f"kis/daily_prices/{ticker}/{start_date:%Y%m%d}_{end_date:%Y%m%d}.json"
 
     saved_path = target_storage.write_json(
         layer=DataLayer.BRONZE,

@@ -2,7 +2,6 @@ import logging
 
 from fair_value.settings import get_settings
 
-
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 

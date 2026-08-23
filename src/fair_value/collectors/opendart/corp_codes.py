@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from zipfile import BadZipFile, ZipFile
 from xml.etree import ElementTree
+from zipfile import BadZipFile, ZipFile
 
 from fair_value.collectors.opendart.client import (
     OpenDartAPIError,
@@ -20,22 +20,14 @@ def fetch_corp_codes(
 
     try:
         with ZipFile(BytesIO(archive)) as zip_file:
-            xml_names = [
-                name
-                for name in zip_file.namelist()
-                if name.lower().endswith(".xml")
-            ]
+            xml_names = [name for name in zip_file.namelist() if name.lower().endswith(".xml")]
 
             if not xml_names:
-                raise OpenDartAPIError(
-                    "회사 고유번호 ZIP에 XML 파일이 없습니다."
-                )
+                raise OpenDartAPIError("회사 고유번호 ZIP에 XML 파일이 없습니다.")
 
             xml_content = zip_file.read(xml_names[0])
     except BadZipFile:
-        raise OpenDartAPIError(
-            "회사 고유번호 응답이 올바른 ZIP 파일이 아닙니다."
-        ) from None
+        raise OpenDartAPIError("회사 고유번호 응답이 올바른 ZIP 파일이 아닙니다.") from None
 
     root = ElementTree.fromstring(xml_content)
     companies: list[dict[str, str]] = []
@@ -45,9 +37,7 @@ def fetch_corp_codes(
             {
                 "corp_code": (item.findtext("corp_code") or "").strip(),
                 "corp_name": (item.findtext("corp_name") or "").strip(),
-                "corp_eng_name": (
-                    item.findtext("corp_eng_name") or ""
-                ).strip(),
+                "corp_eng_name": (item.findtext("corp_eng_name") or "").strip(),
                 "stock_code": (item.findtext("stock_code") or "").strip(),
                 "modify_date": (item.findtext("modify_date") or "").strip(),
             }
@@ -66,7 +56,7 @@ def collect_corp_codes(
 
     document = {
         "source": "opendart",
-        "collected_at": datetime.now(timezone.utc).isoformat(),
+        "collected_at": datetime.now(UTC).isoformat(),
         "record_count": len(companies),
         "records": companies,
     }

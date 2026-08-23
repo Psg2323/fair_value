@@ -1,0 +1,12 @@
+ecos:
+  bok_base_rate: {name: Bank of Korea base rate, stat_code: 722Y001, item_code: "0101000", frequency: D, unit: percent, start_period: "20150101"}
+  krw_usd: {name: KRW per US dollar reference rate, stat_code: 731Y001, item_code: "0000001", frequency: D, unit: KRW_per_USD, start_period: "20150101"}
+  korea_treasury_3y: {name: Korea Treasury Bond 3-year yield, stat_code: 817Y002, item_code: "010200000", frequency: D, unit: percent, start_period: "20150101"}
+kosis:
+  semiconductor_production_index: {name: Semiconductor production index original, org_id: "101", table_id: DT_1F02001, item_code: T10, region_code: "00", industry_code: C261, frequency: M, unit: index_2020_100, start_period: "201501", availability_lag_days: 35}
+  semiconductor_shipment_index: {name: Semiconductor shipment index original, org_id: "101", table_id: DT_1F02001, item_code: T11, region_code: "00", industry_code: C261, frequency: M, unit: index_2020_100, start_period: "201501", availability_lag_days: 35}
+  semiconductor_inventory_index: {name: Semiconductor inventory index original, org_id: "101", table_id: DT_1F02001, item_code: T12, region_code: "00", industry_code: C261, frequency: M, unit: index_2020_100, start_period: "201501", availability_lag_days: 35}
+fred:
+  us_semiconductor_industrial_production: {name: US semiconductor industrial production SA, series_id: IPG3344S, frequency: M, unit: index_2017_100, start_period: "2015-01-01", vintage_mode: initial_release}
+  us_semiconductor_capacity_utilization: {name: US semiconductor capacity utilization SA, series_id: CAPUTLG3344S, frequency: M, unit: percent, start_period: "2015-01-01", vintage_mode: initial_release}
+  us_semiconductor_producer_price_index: {name: US semiconductor producer price index NSA, series_id: PCU33443344, frequency: M, unit: index_dec_1984_100, start_period: "2015-01-01", vintage_mode: initial_release}

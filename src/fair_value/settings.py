@@ -1,8 +1,9 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
+
 from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -28,6 +29,9 @@ class Settings(BaseSettings):
     kis_account_product_code: str = "01"
 
     opendart_api_key: SecretStr = SecretStr("")
+    ecos_api_key: SecretStr = SecretStr("")
+    kosis_api_key: SecretStr = SecretStr("")
+    fred_api_key: SecretStr = SecretStr("")
 
     @property
     def kis_base_url(self) -> str:

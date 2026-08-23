@@ -1,0 +1,59 @@
+accounts:
+  total_assets:
+    statements: [BS]
+    ids:
+      - ifrs-full_Assets
+      - ifrs_Assets
+
+  total_liabilities:
+    statements: [BS]
+    ids:
+      - ifrs-full_Liabilities
+      - ifrs_Liabilities
+
+  equity_parent:
+    statements: [BS]
+    ids:
+      - ifrs-full_EquityAttributableToOwnersOfParent
+      - ifrs_EquityAttributableToOwnersOfParent
+
+  cash_and_cash_equivalents:
+    statements: [BS]
+    ids:
+      - ifrs-full_CashAndCashEquivalents
+      - ifrs_CashAndCashEquivalents
+
+  inventories:
+    statements: [BS]
+    ids:
+      - ifrs-full_Inventories
+      - ifrs_Inventories
+
+  revenue_ytd:
+    statements: [IS, CIS]
+    ids:
+      - ifrs-full_Revenue
+      - ifrs_Revenue
+
+  operating_income_ytd:
+    statements: [IS, CIS]
+    ids:
+      - dart_OperatingIncomeLoss
+
+  net_income_parent_ytd:
+    statements: [IS, CIS]
+    ids:
+      - ifrs-full_ProfitLossAttributableToOwnersOfParent
+      - ifrs_ProfitLossAttributableToOwnersOfParent
+
+  operating_cash_flow_ytd:
+    statements: [CF]
+    ids:
+      - ifrs-full_CashFlowsFromUsedInOperatingActivities
+      - ifrs_CashFlowsFromUsedInOperatingActivities
+
+  capex_ytd:
+    statements: [CF]
+    ids:
+      - ifrs-full_PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities
+      - ifrs_PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities

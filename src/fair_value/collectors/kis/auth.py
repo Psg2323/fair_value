@@ -1,6 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import httpx
@@ -18,9 +17,7 @@ class KISAuth:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self.token_path = (
-            self.settings.data_dir
-            / ".cache"
-            / f"kis_token_{self.settings.kis_environment}.json"
+            self.settings.data_dir / ".cache" / f"kis_token_{self.settings.kis_environment}.json"
         )
 
     def get_access_token(self) -> str:
@@ -52,9 +49,9 @@ class KISAuth:
             expires_at = datetime.fromisoformat(expires_at_text)
 
             if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=timezone.utc)
+                expires_at = expires_at.replace(tzinfo=UTC)
 
-            expiry_buffer = datetime.now(timezone.utc) + timedelta(minutes=5)
+            expiry_buffer = datetime.now(UTC) + timedelta(minutes=5)
 
             if expiry_buffer < expires_at:
                 return token
@@ -69,9 +66,7 @@ class KISAuth:
         app_secret = self.settings.kis_app_secret.get_secret_value()
 
         if not app_key or not app_secret:
-            raise KISAuthenticationError(
-                "KIS 앱키 또는 앱시크릿이 설정되지 않았습니다."
-            )
+            raise KISAuthenticationError("KIS 앱키 또는 앱시크릿이 설정되지 않았습니다.")
 
         url = f"{self.settings.kis_base_url}/oauth2/tokenP"
         request_body = {
@@ -90,9 +85,7 @@ class KISAuth:
 
             response.raise_for_status()
         except httpx.HTTPError as error:
-            raise KISAuthenticationError(
-                f"KIS 토큰 발급 요청에 실패했습니다: {error}"
-            ) from error
+            raise KISAuthenticationError(f"KIS 토큰 발급 요청에 실패했습니다: {error}") from error
 
         raw_payload: object = response.json()
 
@@ -103,9 +96,7 @@ class KISAuth:
         access_token = payload.get("access_token")
 
         if not isinstance(access_token, str) or not access_token:
-            raise KISAuthenticationError(
-                f"KIS 응답에 접근토큰이 없습니다: {payload}"
-            )
+            raise KISAuthenticationError(f"KIS 응답에 접근토큰이 없습니다: {payload}")
 
         expires_in_raw = payload.get("expires_in", 86400)
 
@@ -114,7 +105,7 @@ class KISAuth:
         except ValueError:
             expires_in = 86400
 
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+        expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
         self._save_token(access_token, expires_at)
 
         return access_token

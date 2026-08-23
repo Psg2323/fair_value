@@ -1,0 +1,30 @@
+# Research assumptions for benchmark valuation models, not a finalized RIM design.
+assumptions_version: research_v1
+cost_of_equity:
+  risk_free_indicator: korea_treasury_3y
+  risk_free_rate_scale: 0.01
+  equity_risk_premium: 0.055
+  beta: 1.0
+  minimum: 0.06
+  maximum: 0.20
+cycle_normalized_rim:
+  version: research_v0
+  forecast_years: 5
+  retention_ratio: 0.50
+  minimum_normalized_roe: 0.00
+  maximum_normalized_roe: 0.30
+  maximum_cycle_roe_adjustment: 0.02
+  industrial_production_column: global_cycle_us_semiconductor_industrial_production_yoy
+  producer_price_column: global_cycle_us_semiconductor_producer_price_index_yoy
+  industrial_production_scale: 0.10
+  producer_price_scale: 0.10
+  scenarios:
+    low:
+      normalized_roe_delta: -0.02
+      equity_risk_premium_delta: 0.015
+    base:
+      normalized_roe_delta: 0.00
+      equity_risk_premium_delta: 0.00
+    high:
+      normalized_roe_delta: 0.02
+      equity_risk_premium_delta: -0.015
