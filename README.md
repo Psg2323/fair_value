@@ -1,251 +1,165 @@
-# 반도체 기업 가치·시장 데이터 분석 플랫폼
+# 반도체 Fundamental Fair Value 프로젝트
 
-## 1. 프로젝트 목표
+## 1. 프로젝트 개요
 
-**반도체 기업의 재무·실적 데이터를 기반으로 펀더멘털 적정가치를 산출하고, 실제 주가·실시간 거래·뉴스 데이터를 함께 분석하여 기업가치와 시장가격의 괴리 및 현재 시장 상태를 확인할 수 있는 데이터 플랫폼을 구축한다.**
+이 프로젝트는 반도체 섹터 기업의 재무 데이터와 산업 사이클을 이용해 **Fundamental Fair Value 범위**를 산정하고, 그 유효성을 과거 데이터로 검증하는 데이터 엔지니어링·분석 프로젝트입니다.
 
-기업의 적정가치는 InvestingPro의 Fair Value에서 사용하는 **다중 가치평가 방식**을 참고하여 DCF, 상대가치 등 여러 가치평가 결과를 종합하는 형태로 구성한다.
+목표 출력은 다음 세 가지 시나리오 값입니다.
 
-실제 시장가격과 기업의 펀더멘털 가치를 분리하여 비교하고, 실시간 거래량·가격 변화와 뉴스 데이터를 통해 현재 시장 상황을 함께 확인하는 것을 목표로 한다.
- 
-### 분석 대상
-  1차
-* 삼성전자
-* SK하이닉스
+- `fair_value_low`: 보수적 가정에 따른 하단 가치
+- `fair_value_base`: 기준 가정에 따른 중심 가치
+- `fair_value_high`: 우호적 가정에 따른 상단 가치
 
-2차
-* Micron Technology
-* NVIDIA
-* TSMC
+이 출력과 valuation model은 **아직 구현되지 않은 목표 상태**입니다. 프로젝트는 단기 주가 방향이나 특정 시점의 목표주가를 정답처럼 예측하지 않습니다. 또한 시장가격 자체를 intrinsic value의 정답 또는 학습 label로 취급하지 않습니다. 기업의 내재가치를 독립적으로 추정한 뒤 point-in-time 및 walk-forward 방식으로 미래 성과와 가치 범위의 유효성을 검증하는 것이 핵심입니다.
 
----
+## 2. 분석 대상
 
-## 2. 사용할 데이터(셋)와 출처
+### MVP
 
-데이터 특성에 따라 **Batch / Micro-Batch / Realtime Streaming** 방식으로 수집한다.
+- 삼성전자 (`005930`)
+- SK하이닉스 (`000660`)
 
-| 데이터       | 출처                        | 수집 방식              | 활용               |
-| --------- | ------------------------- | ------------------ | ---------------- |
-| 과거 주가     | 한국투자증권 Open API / Market API | Batch              | OHLCV, 수익률, 기술지표 |
-| 국내 실시간 체결 | 한국투자증권 WebSocket             | Realtime Streaming | 실시간 가격·거래량 분석    |
-| 국내 재무제표   | OpenDART                  | Batch              | 삼성전자·SK하이닉스 가치평가 |
-| 해외 재무제표   | SEC EDGAR                 | Batch              | 해외 반도체 기업 가치평가   |
-| 국내 뉴스     | 네이버 뉴스 검색 API             | Micro-Batch        | 기업 뉴스 및 감성 분석    |
-| 글로벌 뉴스    | GDELT                     | Micro-Batch        | 해외 기업 및 반도체 뉴스   |
-| 반도체 산업지표  | FRED                      | Batch              | 반도체 업황 및 사이클 분석  |
-| 환율·거시경제   | 한국은행 ECOS                 | Batch              | 환율 및 거시지표        |
+### 향후 확장
 
-### 주요 분석 데이터
+- Micron Technology
+- TSMC
+- NVIDIA 등 해외 반도체 기업
 
-**주가**
+해외 기업 확장은 국내 기업용 데이터 파이프라인과 검증 체계가 안정된 이후 진행합니다.
 
-* OHLCV
-* 수익률
-* 이동평균
-* RSI
-* 변동성
-* 거래량 변화
+## 3. 구현 상태
 
-**재무**
+### Implemented
 
-* 매출
-* 영업이익
-* 당기순이익
-* 영업현금흐름
-* CAPEX
-* 자산 / 부채 / 자본
-* EPS
+- Python 3.12 기반 패키지와 로컬 설정 구조
+- 한국투자증권(KIS) API 인증 및 REST client
+- 삼성전자·SK하이닉스 Historical daily price 수집
+- 장기간 가격 데이터의 로컬 Bronze JSON 저장
+- OpenDART API client
+- OpenDART 기업 고유번호 및 연도별 재무제표 raw collector
+- OpenDART raw 데이터 수집 및 로컬 Bronze 저장
+- 로컬 파일시스템 기반 Bronze/Silver/Gold 경로 추상화
 
-**파생지표**
+### In Progress
 
-* FCF
-* ROE / ROIC
-* 성장률
-* 가치평가 모델별 적정가
+- KIS·OpenDART collector의 일관된 실행 진입점
+- OpenDART 수집 흐름의 운영 가능한 파이프라인화
+- raw 데이터 계약과 오류 처리 기준 정리
 
-**뉴스**
+OpenDART는 미구현 상태가 아닙니다. Client와 raw 수집 함수가 구현되어 있고 실제 Bronze 데이터도 존재합니다. 다만 증분 처리, 정규화, 자동화된 테스트, 스케줄링은 아직 완성되지 않았습니다.
 
-* 관련 기업
-* 주요 키워드 및 카테고리
-* 긍정 / 중립 / 부정
-* 주요 내용 요약
+### Planned
 
-뉴스 분석은 로컬에서 모델을 직접 실행하지 않고 **Gemini API 등 외부 LLM API**를 활용하여 분류·감성 분석·요약 결과만 저장한다.
+- Daily incremental batch
+- OpenDART 재무제표 정규화 및 point-in-time 적재
+- Fundamental feature engineering
+- Semiconductor cycle feature 및 regime 연구
+- Fair Value model과 `low/base/high` 범위 산정
+- Point-in-time backtesting 및 walk-forward validation
+- Benchmark model 비교
+- 해외 반도체 기업 데이터 소스 확장
 
----
+## 4. Local-first MVP Architecture
 
-## 3. 수집 → 처리 → 저장 흐름
-
-전체 파이프라인은 **Historical/Batch Pipeline**과 **Realtime Streaming Pipeline**으로 나누어 구성한다.
+현재 데이터 규모에서는 로컬 실행 환경을 우선합니다. 저장과 처리는 필요한 복잡도만 도입하며, 운영 요구와 데이터 규모가 명확해진 뒤 인프라 확장을 결정합니다.
 
 ```text
-                 Semiconductor Data Platform
-
-
-[ Historical / Batch ]
-
-주가 REST API ────┐
-OpenDART / SEC ───┤
-News API ─────────┼──→ Airflow
-FRED / ECOS ──────┘       │
-                          ▼
-                      S3 Bronze
-                   원본 데이터 저장
-                          │
-                          ▼
-                      S3 Silver
-                정제 / 표준화 / 통합
-                          │
-                          ▼
-                       S3 Gold
-                분석용 데이터 생성
-                          │
-                  ┌───────┴────────┐
-                  ▼                ▼
-             Glue / Athena    PostgreSQL
-                                   │
-                                   ▼
-                           Apache Superset
-
-
-[ Realtime Streaming ]
-
-증권사 WebSocket
-        │
-        ▼
- Python Producer
-        │
-        ▼
-      Kafka
-        │
-        ▼
- Streaming Consumer
-        │
-        ▼
-  시간 Window 집계
-        │
-        ▼
- Realtime Metrics
-        │
-   ┌────┴────┐
-   ▼         ▼
- Redis   PostgreSQL
-              │
-              ▼
-       Apache Superset
+KIS Historical Price ──┐
+                      ├──> Local Bronze (raw, immutable-oriented)
+OpenDART Financials ──┘               │
+                                      ▼
+                         Local Silver (normalized, planned)
+                                      │
+                                      ▼
+                    Local Gold (features / valuation, planned)
+                                      │
+                                      ▼
+                      Point-in-time Backtest (planned)
 ```
 
-### Batch Pipeline
+### 데이터 계층
 
-과거 주가, 재무제표, 뉴스, 산업지표는 Airflow를 통해 주기적으로 수집한다.
+- **Bronze — Implemented:** 외부 API 응답과 수집 메타데이터를 원형에 가깝게 보존합니다.
+- **Silver — Planned:** 가격과 재무 데이터를 타입·단위·기간 기준으로 정규화하고 point-in-time 관점에서 결합합니다.
+- **Gold — Planned:** 가치평가, 산업 사이클 분석, 검증에 필요한 feature와 모델 출력을 생성합니다.
 
-수집된 원본은 S3의 **Bronze → Silver → Gold** 구조로 관리한다.
+## 5. Valuation Research Direction
+
+최종 valuation algorithm은 아직 확정되지 않았습니다. 다음 항목은 **Candidate / Research Direction**이며 구현 완료된 모델이 아닙니다.
+
+- Residual Income Model
+- Normalized FCFF / DCF
+- Relative Valuation
+- Semiconductor Cycle Regime Model
+
+각 후보는 데이터 가용성, 회계적 타당성, 안정성, 설명 가능성, point-in-time backtesting 결과를 기준으로 평가합니다. 실증 근거에 따라 일부 모델을 선택하거나 여러 모델의 결과와 불확실성을 조합하여 적정가치 범위를 구성할 예정입니다.
+
+## 6. Validation Direction
+
+검증은 시장가격을 intrinsic value의 label로 두는 방식이 아닙니다. 각 평가 시점에 실제로 이용 가능했던 데이터만 사용하여 다음 지표와 절차를 검토합니다.
+
+- Point-in-time financial data
+- Walk-forward validation
+- Value-to-Price (`V/P`)
+- 이후 12M / 24M / 36M 수익률
+- `fair_value_low`–`fair_value_high` 범위의 coverage
+- 단순 multiple 등 benchmark model과의 비교
+- 시기와 cycle regime에 따른 성능 안정성
+
+구체적인 누출 방지, 재작성 재무제표 처리, 거래일 정렬, 평가 지표는 별도 명세에서 정의합니다.
+
+## 7. Repository Structure
 
 ```text
-Bronze
-외부 API 원본 데이터
-
-   ↓
-
-Silver
-정제 / 타입 변환 / 국가별 데이터 표준화
-
-   ↓
-
-Gold
-분석 지표 / 가치평가 / 대시보드용 데이터
+config/                       기업 및 향후 모델 설정
+data/
+  bronze/                     수집한 raw 데이터
+  silver/                     정규화 데이터(계획)
+  gold/                       feature 및 모델 출력(계획)
+src/fair_value/
+  collectors/kis/             KIS 인증·가격 수집
+  collectors/opendart/        OpenDART raw 수집
+  storage/                    로컬 데이터 계층과 저장소
+  cli.py                      CLI 진입점
+tests/                        자동화 테스트(아직 생성되지 않음)
 ```
 
-OpenDART와 SEC처럼 서로 다른 구조의 재무 데이터를 공통 스키마로 변환하여 기업 간 비교가 가능하도록 구성한다.
+`data/`와 `.env`는 Git 추적 대상이 아닙니다. API key, 계좌 정보, access token, 실제 수집 데이터는 커밋하지 않습니다.
 
-### Fundamental Value
+## 8. Local Development
 
-재무 데이터를 기반으로 기업의 펀더멘털 적정가치를 계산한다.
-
-```text
-재무 데이터
-    ↓
-FCF / EPS / ROIC 등 계산
-    ↓
-여러 가치평가 모델 적용
-    ↓
-모델별 적정가 산출
-    ↓
-Fundamental Fair Value
-    ↓
-현재 Market Price와 비교
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+cp .env.example .env
+python -m fair_value version
 ```
 
-하나의 가격을 절대적인 적정가로 제시하기보다는 여러 모델 결과를 바탕으로 **적정가치 범위와 현재가 대비 괴리율**을 제공한다.
+환경 변수는 `FAIR_VALUE_` prefix를 사용합니다. 현재 공개 CLI에는 version 명령만 연결되어 있으며 collector 실행 명령은 아직 정식 인터페이스로 제공되지 않습니다.
 
-### Realtime Streaming
+품질 검사는 다음 도구를 기준으로 합니다.
 
-장중 실시간 체결 데이터는 WebSocket을 통해 수집하여 Kafka로 전달한다.
-
-```text
-WebSocket
-   ↓
-Kafka
-   ↓
-Consumer
-   ↓
-1초 / 1분 / 5분 Window 집계
-   ↓
-실시간 가격 / 거래량 / 체결 지표
+```bash
+pytest
+ruff check .
+ruff format --check .
+mypy src
 ```
 
-현재 거래량을 과거 동일 시간대 평균 거래량과 비교하여 거래량 급증 등의 시장 변화를 분석한다.
+테스트 디렉터리는 아직 없으므로 `pytest` 기반 unit/integration test 구축은 roadmap에 포함됩니다. 외부 API 테스트는 credential과 live network에 의존하지 않도록 mock 또는 저장된 fixture를 사용해야 합니다.
 
-### 뉴스 처리
+## 9. Planned Documentation
 
-```text
-News API
-   ↓
-중복 제거 / 기업 매핑
-   ↓
-LLM API
-   ↓
-감성 / 카테고리 / 요약
-   ↓
-S3 / PostgreSQL
-```
+README는 프로젝트의 목표, 현재 상태, 로컬 실행 방법만 설명합니다. 상세 설계는 다음 문서로 분리할 예정입니다.
 
-LLM은 기업 적정가치 계산에는 사용하지 않고 **뉴스 분석 영역에서만 활용**한다.
+- `docs/VALUATION_SPEC.md`: 가치평가 후보, 입력 feature, 가정, 범위 산정 규칙
+- `docs/DATA_CONTRACT.md`: Bronze/Silver/Gold schema와 point-in-time 데이터 계약
+- `docs/BACKTEST_SPEC.md`: walk-forward 절차, 누출 방지, 지표와 benchmark
+- `docs/DECISIONS.md`: 주요 설계 선택, 근거, 대안 및 변경 이력
 
-### 최종 대시보드
+위 문서들은 현재 roadmap 항목이며 아직 구현 완료된 산출물로 간주하지 않습니다.
 
-Apache Superset을 통해 다음 정보를 제공한다.
+## 10. Current Scope Boundaries
 
-* 반도체 기업별 현재 시장가격
-* Fundamental Fair Value 및 현재가 대비 괴리율
-* 매출·영업이익·FCF·ROIC 등 재무 추이
-* 과거 및 최근 주가·거래량
-* 실시간 거래량 이상 지표
-* 뉴스 감성 및 주요 이슈
-* 반도체 기업 간 비교
-
----
-
-## 4. 사용해보고 싶은 기술 후보
-
-| 영역                 | 기술 후보                   | 목적                            |
-| ------------------ | ----------------------- | ----------------------------- |
-| 데이터 수집             | Python                  | REST API / WebSocket 수집       |
-| Workflow           | Apache Airflow          | Batch Pipeline 스케줄링           |
-| Streaming          | Apache Kafka            | 실시간 체결 데이터 처리                 |
-| Data Lake          | AWS S3                  | Bronze / Silver / Gold 데이터 저장 |
-| Data Catalog / ETL | AWS Glue                | 데이터 카탈로그 및 ETL                |
-| Query Engine       | AWS Athena              | S3 데이터 SQL 분석                 |
-| Serving DB         | PostgreSQL              | 분석·대시보드용 데이터 제공               |
-| Cache              | Redis                   | 실시간 데이터 및 지표 저장               |
-| News Analysis      | Gemini API / NLP        | 뉴스 분류·감성 분석·요약                |
-| Visualization      | Apache Superset         | 분석 및 Near-Realtime 대시보드       |
-| Runtime            | Local / OCI Compute     | 파이프라인 실행 환경                   |
-| Environment        | Docker / Docker Compose | 서비스 컨테이너 구성                   |
-| Version Control    | Git / GitHub            | 소스 및 프로젝트 관리                  |
-
----
-
-## 프로젝트 요약
-
-> **반도체 기업의 과거 주가·재무·뉴스·산업 데이터는 Airflow 기반 Batch Pipeline으로 수집하여 S3 Data Lake에서 정제·가공하고, 실시간 체결 데이터는 Kafka 기반 Streaming Pipeline으로 처리한다. 재무 데이터를 기반으로 InvestingPro의 다중 가치평가 방식을 참고한 Fundamental Fair Value를 산출하고, 실제 시장가격·거래량·뉴스 데이터와 비교하여 기업가치와 시장가격의 괴리를 분석하는 플랫폼을 구축한다.**
+MVP는 재현 가능한 로컬 데이터 수집, 재무·산업 feature, 적정가치 범위, point-in-time 검증에 집중합니다. 실시간 시장 처리, 뉴스 분석, 대시보드, 분산 처리, 클라우드 인프라는 현재 핵심 아키텍처와 구현 범위에 포함하지 않습니다. 향후 명확한 요구가 생길 때 별도의 설계 결정으로 검토합니다.
