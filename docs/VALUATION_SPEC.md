@@ -1,84 +1,90 @@
-# Valuation Specification
+# 가치평가 명세
 
-## Status and Objective
+## 상태와 목적
 
-The implemented model is `research_v0`, not a validated production valuation or investment
-recommendation. It estimates an explainable intrinsic-value range for Samsung Electronics and
-SK hynix. Market price is used only to calculate V/P and post-valuation diagnostics; it is not an
-intrinsic-value label.
+현재 구현된 모델은 `research_v0`이며, 검증이 완료된 운영용 가치평가나 투자
+추천 모델이 아닙니다. 삼성전자와 SK하이닉스의 설명 가능한 내재가치 범위를 추정하는
+것이 목적입니다. 시장가격은 V/P와 가치평가 이후 진단 계산에만 사용하며, 내재가치의
+정답 레이블로 사용하지 않습니다.
 
-## Point-in-Time Inputs
+## 평가 시점 기준(Point-in-Time) 입력
 
-Each row is keyed by `ticker + valuation_date` and may use only records whose
-`available_at <= valuation_date`. The current model requires:
+각 행의 키는 `ticker + valuation_date`이며
+`available_at <= valuation_date`인 레코드만 사용할 수 있습니다. 현재 모델에는 다음
+입력이 필요합니다.
 
-- parent equity per KIS adjusted-price share unit and its financial `period_end/available_at`;
-- the point-in-time rolling median of reported TTM ROE;
-- the available Korean Treasury 3-year yield;
-- ALFRED initial-release U.S. semiconductor industrial-production YoY and producer-price YoY.
+- KIS 수정주가 단위에 맞춘 지배기업 소유주지분과 재무정보의 `period_end/available_at`
+- 해당 시점까지 보고된 TTM ROE의 이동 중앙값
+- 해당 시점에 이용 가능한 한국 국고채 3년물 수익률
+- ALFRED 최초 발표 기준 미국 반도체 산업생산 YoY와 생산자물가 YoY
 
-KIS history is ex-post split-adjusted. Reported shares remain unchanged for audit, while explicit
-corporate actions convert them to `price_basis_total_shares_outstanding`. Samsung periods before
-the 2018-05-04 listing of split shares use a 50x factor. This is a unit conversion, not predictive
-information.
+KIS 과거 가격은 사후 액면분할이 반영된 수정주가입니다. 감사를 위해 공시 주식 수는
+그대로 보존하고, 명시적인 기업행위(corporate action)을 이용해
+`price_basis_total_shares_outstanding`으로 변환합니다. 2018-05-04 분할주식 상장
+이전 삼성전자 기간에는 50배를 적용합니다. 이는 단위 변환일 뿐 예측 정보가
+아닙니다.
 
-KOSIS signals are excluded from historical model runs because the stored historical observations
-are a latest-vintage snapshot with 2026 availability. Capacity utilization is excluded because its
-initial-release history begins only in 2022.
+저장된 KOSIS 과거 관측값은 2026년 이용 가능 시점이 적용된 최신 빈티지 스냅샷이므로
+과거 모델 실행에서 제외합니다. 가동률은 최초 발표 이력이 2022년에 시작되므로
+제외합니다.
 
-## Benchmarks
+## 비교 기준 모델(Benchmark)
 
-Book Value uses `V = B`. No-growth RIM uses `RI = EPS - k_e * B` and
-`V = B + RI / k_e`. Both are comparison models, not truth labels.
+Book Value는 `V = B`를 사용합니다. No-growth RIM은
+`RI = EPS - k_e * B`와 `V = B + RI / k_e`를 사용합니다. 두 모델 모두 비교용이며
+정답 레이블이 아닙니다.
 
-## Cycle-Normalized RIM research_v0
+## 경기 정규화 RIM research_v0
 
-The bounded cycle score is:
+제한된 경기 점수는 다음과 같습니다.
 
 `s = 0.5 * [clip(IP_yoy / 0.10, -1, 1) + clip(PPI_yoy / 0.10, -1, 1)]`
 
-The base normalized ROE is the rolling ROE median minus `0.02 * s`, bounded to 0%-30%.
-This makes the assumption modestly countercyclical; the cycle score does not predict price.
+기준 정규화 ROE는 ROE 이동 중앙값에서 `0.02 * s`를 차감한 뒤 0%~30%
+범위로 제한합니다. 이는 가정을 완만한 역주기 형태로 조정하는 것이며, 경기 점수로
+주가를 예측하지 않습니다.
 
-Cost of equity is `clip(r_f + beta * ERP, 6%, 20%)`, with beta 1.0 and base ERP 5.5%.
-For five forecast years, excess ROE fades linearly to zero. Opening book value follows clean
-surplus with a research retention assumption of 50%. Value equals opening book plus discounted
-forecast residual income; no separate terminal residual income is added after the fade.
+자기자본비용은 `clip(r_f + beta * ERP, 6%, 20%)`이며 베타 1.0, 기준 ERP 5.5%를
+사용합니다. 5년의 예측 기간 동안 초과 ROE는 0까지 선형으로 감소합니다. 기초 장부가치는
+연구용 유보율 가정 50%를 적용한 클린 서플러스 관계를 따릅니다. 가치는 기초
+장부가치와 예측 잔여이익의 할인현재가치를 합산하며, 감소 기간 이후 별도의 말기
+잔여이익은 추가하지 않습니다.
 
-The range is parameter sensitivity, not a confidence interval:
+가치 범위는 신뢰구간이 아니라 매개변수 민감도입니다.
 
-| Scenario | Normalized ROE | ERP |
+| 시나리오 | 정규화 ROE | ERP |
 | --- | ---: | ---: |
-| low | base - 2pp | base + 1.5pp |
-| base | unchanged | unchanged |
-| high | base + 2pp | base - 1.5pp |
+| low | base - 2%p | base + 1.5%p |
+| base | 변경 없음 | 변경 없음 |
+| high | base + 2%p | base - 1.5%p |
 
-## Sensitivity and Walk-Forward research_v1
+## 민감도 분석과 순차 검증(Walk-Forward) research_v1
 
-`config/valuation_sensitivity.yaml` declares nine one-at-a-time variants: base, two fade
-horizons, two retention ratios, two cycle-adjustment bounds, and two ERP changes. Each variant
-changes one assumption while all others remain fixed. The run does not rank or select variants
-using future returns.
+`config/valuation_sensitivity.yaml`에는 한 번에 한 가정만 변경하는 9개 변형이
+정의되어 있습니다. 기준안, 두 가지 감소 기간, 두 가지 유보율, 두 가지
+경기 조정 범위와 두 가지 ERP 변경으로 구성됩니다. 각 변형은 하나의 가정만
+바꾸고 나머지는 고정합니다. 미래 수익률을 이용해 변형의 순위를 정하거나 선택하지
+않습니다.
 
-Walk-forward v1 reserves the first three calendar years, then reports annual 2021-2026 evaluation
-folds with `walk_forward_method=fixed_assumptions_no_selection`. It is an expanding-time
-diagnostic, not a fitted or tuned model.
+순차 검증 v1은 최초 3개 역년을 확보한 뒤 2021~2026년의 연도별 평가 구간을
+`walk_forward_method=fixed_assumptions_no_selection`으로 보고합니다. 이는 시간이
+확장되는 진단이며 학습하거나 조정한 모델이 아닙니다.
 
-## Current Evidence and Limitations
+## 현재 근거와 한계
 
-The 2026-08-24 run produced 188 monthly `research_v0` ranges from 2018-11 through 2026-08.
-Report v1 separates monthly and non-overlapping horizon samples. Non-overlapping range coverage
-is about 14%-18%, and the V/P relationship changes sign by ticker and horizon. Only 14 base rows
-are evaluated at the non-overlapping 12M horizon.
+2026-08-24 실행에서는 2018-11부터 2026-08까지 월별 `research_v0` 범위 188개를
+생성했습니다. 보고서 v1은 월별 표본과 비중첩 평가기간 표본을 분리합니다. 비중첩 범위
+포함률은 약 14%~18%이며 V/P 관계의 방향은 종목과 평가기간에 따라 달라집니다.
+비중첩 12M 평가기간에서 평가된 `base` 행은 14개뿐입니다.
 
-Sensitivity v1 produced 1,692 ranges. Latest values varied by roughly -5% to +5% around base, but
-the sample is too small to select an assumption set. The sample contains only two related Korean
-firms, and Samsung is valued on consolidated equity despite non-semiconductor businesses. Future
-work must address source vintages, company-specific assumptions, broader firms, and Samsung SOTP
-before model selection.
+민감도 분석 v1에서는 1,692개 범위를 생성했습니다. 최신 값은 기준안 대비 약 -5%~+5%
+변화했지만 표본이 너무 작아 가정 집합을 선택할 수 없습니다. 표본은 서로 연관된 한국
+기업 두 곳뿐이며, 삼성전자는 비반도체 사업이 포함된 연결 지분을 기준으로 평가합니다.
+모델을 선택하기 전에 원천 빈티지, 기업별 가정, 분석 기업 확대와 삼성전자 SOTP를
+보완해야 합니다.
 
-## References
+## 참고자료
 
 - [Ohlson (1995), Earnings, Book Values, and Dividends in Equity Valuation](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1911-3846.1995.tb00461.x)
-- [Federal Reserve G.17 methodology](https://www.federalreserve.gov/releases/g17/about.htm)
-- [Damodaran, normalized earnings for cyclical firms](https://pages.stern.nyu.edu/~adamodar/New_Home_Page/valquestions/normearn.htm)
+- [Federal Reserve G.17 방법론](https://www.federalreserve.gov/releases/g17/about.htm)
+- [Damodaran, 경기순환 기업의 정규화 이익](https://pages.stern.nyu.edu/~adamodar/New_Home_Page/valquestions/normearn.htm)

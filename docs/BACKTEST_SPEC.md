@@ -1,45 +1,46 @@
-# Backtest Specification
+# 백테스트 명세
 
-## v0 Boundary
+## v0 범위
 
-Valuation and evaluation are separate stages. The valuation interface contains at least
-`valuation_date`, `ticker`, `market_price`, and `model_value`. Model calculations may use
-only point-in-time inputs available on or before `valuation_date`.
+가치평가와 사후 평가는 서로 분리된 단계입니다. 가치평가 입력 형식에는 최소한
+`valuation_date`, `ticker`, `market_price`, `model_value`가 포함됩니다.
+모델 계산에는 `valuation_date` 당일 또는 그 이전에 이용 가능했던 평가 시점 기준(point-in-time) 입력만 사용할 수 있습니다.
 
-Future prices enter only after model values are frozen. For 1, 3, 6, and 12 calendar months, v0
-sets a target date and selects the first trading close on or after that date. If the horizon has
-not occurred, the row remains pending with null future price and return.
+미래 가격은 모델 값을 확정한 뒤에만 평가에 사용합니다. v0는 달력 기준 1개월, 3개월,
+6개월, 12개월 후의 목표일을 설정하고, 해당 목표일 당일 또는 이후의 첫 거래일 종가를
+선택합니다. 아직 평가 기간이 지나지 않았다면 미래 가격과 수익률을 null로 두고 해당
+행을 대기 상태로 유지합니다.
 
-## Outputs
+## 출력
 
-The evaluation adds `target_date`, `horizon_months`, `future_trading_date`,
-`future_price`, and `future_return`. Range models also receive
-`future_price_within_range`. Coverage is a calibration diagnostic; it does not make market price
-the ground truth for intrinsic value.
+평가 결과에는 `target_date`, `horizon_months`, `future_trading_date`,
+`future_price`, `future_return`이 추가됩니다. 범위 모델에는
+`future_price_within_range`도 추가됩니다. 범위 포함률(coverage)은 보정 상태를
+진단하는 지표일 뿐이며, 시장가격을 내재가치의 정답으로 취급하지 않습니다.
 
-Report v1 writes standardized, ticker/horizon, year/horizon, ticker/year/horizon, and
-non-overlapping outputs under `data/gold/backtest/reports/`. A non-overlapping series selects the
-next valuation only when it starts on or after the prior target or realized future trading date.
+보고서 v1은 표준 결과와 종목/평가기간, 연도/평가기간, 종목/연도/평가기간,
+비중첩 결과를 `data/gold/backtest/reports/`에 저장합니다. 비중첩 시계열은 다음
+평가일이 이전 목표일 또는 실제 미래 거래일과 같거나 그 이후인 경우에만 선택합니다.
 
-## Fixed-Assumption Walk-Forward v1
+## 고정 가정 순차 검증(Walk-Forward) v1
 
-Sensitivity variants are declared before evaluation and are never selected using future returns.
-After three initial calendar years, each later year is reported as a test fold with an expanding
-training boundary. The current method is explicitly `fixed_assumptions_no_selection`; it measures
-time stability but does not estimate parameters.
+민감도 분석 변형은 평가 전에 정의하며 미래 수익률을 이용해 선택하지 않습니다.
+초기 3개 역년 이후에는 학습 구간이 점차 확장되는 방식으로 각 연도를 평가 구간으로
+보고합니다. 현재 방법은 명시적으로 `fixed_assumptions_no_selection`이며, 시간에
+따른 안정성을 측정하지만 매개변수를 추정하지는 않습니다.
 
-## Model-Selection Criteria
+## 모델 선택 기준
 
-A candidate must first have zero point-in-time and look-ahead violations. Compare it with Book
-Value and no-growth RIM using:
+후보 모델은 우선 평가 시점 기준 위반과 미래 정보 사용 위반이 하나도 없어야 합니다.
+그다음 아래 기준으로 Book Value 및 no-growth RIM과 비교합니다.
 
-- coverage, missingness, and sensitivity to assumptions;
-- stability of the V/P relationship with later 1M/3M/6M/12M returns;
-- low/base/high coverage and width, by ticker and cycle condition;
-- walk-forward performance versus benchmarks, with parameters fixed before each test window;
-- accounting consistency, interpretability, and failure behavior.
+- 데이터 포함률, 결측률과 가정 변화에 대한 민감도
+- V/P와 이후 1M·3M·6M·12M 수익률 관계의 안정성
+- 종목 및 경기 국면별 low/base/high 범위 포함률과 폭
+- 각 평가 구간 전에 매개변수를 고정한 비교 모델 대비 순차 검증 성과
+- 회계적 일관성, 설명 가능성과 오류 발생 시 동작
 
-The current two-ticker sample cannot establish sector-wide generalization or reliable statistical
-significance. Report v1 exposes overlapping and non-overlapping results separately, but 12M
-non-overlapping samples remain very small. Preserve source vintages and add firms before selecting
-a model.
+현재 두 종목만으로는 반도체 업종 전체에 대한 일반화나 신뢰할 만한 통계적 유의성을
+확립할 수 없습니다. 보고서 v1은 중첩 표본과 비중첩 표본을 분리해 제공하지만, 12M
+비중첩 표본은 여전히 매우 적습니다. 모델을 선택하기 전에 원천 데이터의 빈티지를
+보존하고 분석 기업을 확대해야 합니다.

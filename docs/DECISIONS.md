@@ -1,101 +1,103 @@
-# Decisions
+# 설계 결정 기록
 
-## 2026-08-24 - Local Airflow for KIS Daily Price Scheduling
+## 2026-08-24 - KIS 일별 주가 수집을 위한 로컬 Airflow
 
-### Context
+### 배경
 
-The local Windows/WSL machine is not always running. KIS daily prices should be collected
-after the Korean market close, and missed days must be recovered when the machine next starts.
+로컬 Windows/WSL 컴퓨터가 항상 실행되는 것은 아닙니다. KIS 일별 주가는 한국시장
+마감 후 수집해야 하며, 컴퓨터가 다음에 시작될 때 누락된 날짜를 복구해야 합니다.
 
-### Decision
+### 결정
 
-Use Apache Airflow 3.3.1 on Python 3.12 as a Docker Compose `orchestration` profile.
+Python 3.12 기반 Apache Airflow 3.3.1을 Docker Compose `orchestration` 프로필로
+사용합니다.
 
-- Schedule the KIS task in `fair_value_daily_pipeline` at 16:20 Asia/Seoul on weekdays.
-- Use `catchup=False`; after downtime, create only the latest scheduled run.
-- Let the idempotent KIS incremental job recover every date after the last canonical trading day.
-- Exclude the current date before 16:10 Asia/Seoul, including manual or startup execution.
-- Use `restart: unless-stopped` so the container returns when Docker Desktop starts.
-- Keep Kafka and Spark outside this operating path; they remain course adapters.
+- 평일 16:20 Asia/Seoul에 `fair_value_daily_pipeline`의 KIS 작업을 실행합니다.
+- `catchup=False`를 사용해 중단 후에는 최신 예정 실행 하나만 생성합니다.
+- 멱등성을 보장하는 KIS 증분 작업이 마지막 표준 거래일 이후의 모든 날짜를 복구합니다.
+- 수동 실행 또는 시작 시 실행을 포함해 16:10 Asia/Seoul 이전에는 당일 데이터를 제외합니다.
+- Docker Desktop이 시작될 때 컨테이너가 다시 실행되도록 `restart: unless-stopped`를 사용합니다.
+- Kafka와 Spark는 운영 경로에서 제외하고 수업용 어댑터로 유지합니다.
 
-### Consequences
+### 영향
 
-This is a single-machine local deployment using Airflow standalone and its local metadata store,
-not a high-availability production installation. Docker Desktop must start at Windows sign-in.
-Move to a multi-service Airflow deployment and external database only when concurrency,
-reliability, or remote operation requires it.
+이는 Airflow 단독 실행 환경과 로컬 메타데이터 저장소를 사용하는 단일 컴퓨터 배포이며,
+고가용성 운영 환경이 아닙니다. Windows 로그인 시 Docker Desktop이 시작되어야
+합니다. 동시성, 안정성 또는 원격 운영이 필요해질 때만 다중 서비스 Airflow와 외부
+데이터베이스로 전환합니다.
 
-## 2026-08-24 - Daily Local Pipeline Scope
+## 2026-08-24 - 일별 로컬 파이프라인 범위
 
-### Decision
+### 결정
 
-Keep one weekday 16:20 Asia/Seoul DAG for KIS incremental prices, recent OpenDART refresh,
-economic indicators, normalization, as-of inputs, valuation, and post-valuation evaluation.
-OpenDART routine runs refresh the current and previous business years; explicit historical mode
-remains available. Kafka and Spark are not part of this operating path.
+평일 16:20 Asia/Seoul에 실행되는 하나의 DAG에서 KIS 증분 주가, 최근 OpenDART 갱신,
+경제지표, 정규화, as-of 입력, 가치평가와 사후 평가를 처리합니다. OpenDART 정기 실행은
+현재 사업연도와 직전 사업연도를 갱신하며, 전체 이력 수집은 별도 `historical` 모드로
+유지합니다. Kafka와 Spark는 이 운영 경로에 포함하지 않습니다.
 
-### Consequences
+### 영향
 
-One failed source blocks downstream calculations rather than publishing partially refreshed model
-outputs. The local machine and Docker Desktop remain operational dependencies.
+원천 하나라도 실패하면 일부 데이터만 갱신된 모델 결과를 배포하지 않고 이후 계산을
+중단합니다. 로컬 컴퓨터와 Docker Desktop은 계속 운영 의존 요소로 남습니다.
 
-## 2026-08-24 - Cycle-Normalized RIM Remains research_v0
+## 2026-08-24 - 경기 정규화 RIM을 research_v0로 유지
 
-### Decision
+### 결정
 
-Implement a finite-fade RIM as a reproducible research candidate, not a selected model. Use the
-point-in-time rolling ROE median, a bounded countercyclical adjustment from ALFRED initial-release
-U.S. semiconductor production and producer-price signals, and explicit parameter scenarios.
-Exclude KOSIS from historical model rows until original vintages are available.
+유한 감소(finite-fade) RIM을 선택된 모델이 아닌 재현 가능한 연구 후보로 구현합니다. 평가 시점 기준 ROE 이동 중앙값, ALFRED 최초 발표 미국 반도체 생산·생산자물가 신호를 이용한 제한된
+역주기 조정, 명시적인 매개변수 시나리오를 사용합니다. 원본 빈티지를 확보하기 전에는
+KOSIS를 과거 모델 행에서 제외합니다.
 
-### Consequences
+### 영향
 
-The implementation produces `fair_value_low/base/high`, but those values are experimental.
-Initial V/P correlations and range coverage do not support promotion. Fixed ERP, beta, retention,
-fade, and scenario widths require sensitivity analysis and walk-forward comparison with Book Value
-and no-growth RIM. Samsung consolidated equity also requires eventual SOTP analysis.
+구현 결과로 `fair_value_low/base/high`를 생성하지만 이는 실험값입니다. 초기 V/P
+상관관계와 범위 포함률만으로는 모델 채택을 뒷받침할 수 없습니다. 고정 ERP, beta,
+유보율, 감소 기간과 시나리오 폭은 민감도 분석 및 Book Value·no-growth RIM 대비
+순차 검증 비교가 필요합니다. 삼성전자 연결 지분은 향후 SOTP 분석도 필요합니다.
 
-## 2026-08-24 - Adjusted-Price Share Basis
+## 2026-08-24 - 수정주가 기준 주식 수
 
-### Decision
+### 결정
 
-Keep OpenDART reported shares unchanged and derive separate price-basis shares for per-share
-valuation inputs. KIS history is adjusted, so Samsung financial periods before the 2018-05-04
-split-share listing multiply reported shares by 50. The action is explicit in
-`config/corporate_actions.yaml` and backed by
-[Samsung IR](https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.71265/).
+OpenDART에 공시된 주식 수는 변경하지 않고, 주당 가치평가 입력을 위해 별도의 수정주가
+기준 주식 수를 계산합니다. KIS 과거 가격은 수정주가이므로 2018-05-04 분할주식 상장
+이전 삼성전자 재무 기간에는 공시 주식 수에 50을 곱합니다. 이 기업행위(corporate action)는
+`config/corporate_actions.yaml`에 명시하고
+[삼성전자 IR](https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.71265/)을
+근거로 사용합니다.
 
-### Consequences
+### 영향
 
-The conversion removes a roughly 50x pre-split BVPS/EPS unit mismatch. A later-known split is used
-only to express historical numerator and denominator in the same units as the adjusted price; it
-does not enter earnings or valuation assumptions. Material share-count jumps without a configured
-action fail validation.
+이 변환은 액면분할 이전 BVPS/EPS와 주가 사이의 약 50배 단위 불일치를 제거합니다.
+나중에 알려진 액면분할 정보는 과거의 분자와 분모를 수정주가와 같은 단위로 표현하는
+데만 사용하며, 이익이나 가치평가 가정에는 사용하지 않습니다. 설정에 없는 중요한
+주식 수 변동은 검증에 실패합니다.
 
-## 2026-08-24 - Fail-Fast Quality Gates and Backtest Report v1
+## 2026-08-24 - 즉시 중단 품질 검사와 백테스트 보고서 v1
 
-### Decision
+### 결정
 
-Run canonical quality checks before as-of construction and point-in-time checks before valuation.
-Report monthly and non-overlapping samples separately by ticker, year, and horizon. Keep pending
-future horizons instead of dropping them.
+As-of 데이터 생성 전에 표준 데이터 품질 검사를 실행하고, 가치평가 전에 평가 시점 기준 검사를 실행합니다. 월별 표본과 비중첩 표본을 종목, 연도, 평가기간별로 분리해
+보고합니다. 아직 기간이 지나지 않은 미래 평가기간은 삭제하지 않고 대기 상태로
+유지합니다.
 
-### Consequences
+### 영향
 
-Invalid adjusted-price basis, keys, OHLCV/returns, financial timing, per-share calculations, or
-future availability blocks downstream Airflow tasks. Report v1 reduces hidden dependence from
-overlapping windows but does not create statistical significance from the two-company sample.
+수정주가 기준, 키, OHLCV·수익률, 재무정보 시점, 주당 계산 또는 미래 데이터 사용이
+잘못되면 이후 Airflow 작업을 중단합니다. 보고서 v1은 중첩 구간에서 발생하는 숨은
+의존성을 줄이지만, 두 기업만으로는 통계적 유의성을 확보할 수 없습니다.
 
-## 2026-08-24 - Sensitivity Is Diagnostic, Not Parameter Selection
+## 2026-08-24 - 민감도 분석은 진단이며 매개변수 선택이 아님
 
-### Decision
+### 결정
 
-Use nine predeclared one-at-a-time cycle-RIM variants. Keep assumptions fixed across annual
-2021-2026 walk-forward folds and label the method
-`fixed_assumptions_no_selection`. Do not select a variant from future-return results.
+한 번에 한 가정만 변경하도록 사전에 정의한 9개의 cycle-RIM 변형을 사용합니다. 2021~2026년의
+연도별 순차 검증 구간 전체에서 가정을 고정하고 방법을
+`fixed_assumptions_no_selection`으로 표시합니다. 미래 수익률 결과를 이용해 변형을
+선택하지 않습니다.
 
-### Consequences
+### 영향
 
-The outputs expose assumption sensitivity and time instability without claiming an optimized
-model. Research v1 remains outside the daily Airflow model-selection path and does not promote
-cycle RIM beyond candidate status.
+결과는 최적화된 모델이라고 주장하지 않으면서 가정에 대한 민감도와 시간에 따른
+불안정성을 보여줍니다. 연구 v1은 일별 Airflow 모델 선택 경로 밖에 있으며,
+경기 정규화 RIM을 연구 후보 이상의 상태로 승격하지 않습니다.

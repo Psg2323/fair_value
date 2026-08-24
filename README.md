@@ -1,271 +1,357 @@
 # 반도체 Fundamental Fair Value 프로젝트
 
-## 1. 프로젝트 개요
+## 프로젝트 개요
 
-이 프로젝트는 삼성전자와 SK하이닉스의 재무 데이터와 반도체 산업 사이클을 이용해 **Fundamental Fair Value 범위**를 산정하고, point-in-time 및 walk-forward 방식으로 검증하는 로컬 데이터 엔지니어링·분석 프로젝트입니다.
+반도체 관련 기업의 재무·시장·반도체 경기 데이터를 결합해 **적정가치 범위**를 산출하고, 계산 결과와 주요 경제지표를 **Apache Superset 대시보드**에서 한눈에 확인할 수 있도록 만드는 프로젝트입니다.
 
-목표 출력은 보수·기준·우호 시나리오의 `fair_value_low`, `fair_value_base`, `fair_value_high`입니다. 현재 `research_v0`가 이 형식의 실험 결과를 생성하지만, backtest로 채택된 최종 모델은 아닙니다. 단기 주가 방향을 예측하거나 시장가격을 intrinsic value의 정답 label로 사용하지 않습니다.
+## 분석 대상
 
-## 2. 분석 대상
+분석 대상을 1차부터 3차까지 단계적으로 확대할 예정입니다.
 
-- 삼성전자 (`005930`)
-- SK하이닉스 (`000660`)
+| 단계 | 분류 | 대상 기업 |
+|---|---|---|
+| 1차(MVP) | 메모리 반도체 | 삼성전자, SK하이닉스 |
+| 2차 | 반도체 설계·후공정 | DB하이텍, LX세미콘, 제주반도체, 한미반도체 |
+| 3차 | 반도체 소재·부품·장비 | HPSP, 주성엔지니어링, 원익IPS, 한솔케미칼, 솔브레인 |
 
-Micron, TSMC, NVIDIA 등 해외 기업은 국내 MVP의 데이터 계약과 검증 체계가 안정된 이후 확장합니다.
+## 최종 시스템
 
-## 3. 구현 상태
+```text
+기업 적정가치 산출 → 경제지표 계산 → Apache Superset 시각화
+```
 
-### Implemented
+최종 플랫폼에서는 다음 내용을 기업·평가일별로 탐색할 수 있도록 구성합니다.
 
-- Python 3.12 기반 로컬 패키지와 환경 설정
-- KIS 인증·REST client와 수정주가 Historical collector
-- 삼성전자·SK하이닉스 장기 수정 일봉 수집
-- 마지막 거래일 이후 KIS daily incremental batch
-- 평일 16:20 KST 원천 갱신 → as-of → valuation → backtest와 재기동 catch-up을 위한 local Airflow orchestration
-- KIS Bronze → canonical Silver 가격 정규화
-- OpenDART client, 기업 고유번호 collector, historical/incremental 실행 진입점
-- 2015년 이후 분기·반기·사업보고서 연결 재무제표 raw collector
-- OpenDART 주식 총수·자기주식·유통주식 및 배당 raw collector
-- ECOS 기준금리·국고채 3년·원/달러 환율 raw collector와 canonical Silver
-- KOSIS 반도체 생산·출하·재고 월별 지수 raw collector와 canonical Silver
-- FRED/ALFRED 미국 반도체 산업생산·가동률·생산자물가 최초발표값 collector와 canonical Silver
-- 정기보고서 접수일 metadata collector
-- OpenDART Bronze → point-in-time Silver financial normalization
-- 분기 단독값, TTM, ROE, 영업이익률, 재고 증가율, CAPEX 비율, FCF proxy feature
-- 반도체 생산·출하·재고 YoY와 재고/출하 비율 cycle candidate feature
-- FRED 산업생산·생산자물가 YoY와 가동률 전년차 cycle candidate feature
-- 로컬 Bronze/Silver/Gold 경로
-- pytest 기반 자동화 테스트
-- 과제용 Kafka Producer/Consumer와 Spark batch adapter
-- 월말 거래일 기준 point-in-time as-of model input
-- Book Value 및 no-growth Residual Income benchmark
-- valuation과 분리된 1M·3M·6M·12M backtest v0
-- finite-fade cycle-normalized RIM `research_v0`
-- parameter scenario 기반 `fair_value_low/base/high`
-- 삼성전자 2018년 50:1 액면분할을 반영한 수정주가 기준 주당 feature
-- canonical/as-of fail-fast data quality gate와 Airflow 선행 검증 task
-- ticker·연도·horizon 및 비중첩 표본을 분리한 Backtest report v1
-- 9개 one-at-a-time RIM sensitivity와 고정 가정 연도별 walk-forward 진단
+- 현재 주가와 적정가치 low/base/high 비교
+- 가치평가 premium·discount 추이
+- ROE, 영업이익률, 재고 증가율, CAPEX와 FCF proxy
+- 기준금리, 국고채 금리와 원/달러 환율
+- 국내외 반도체 생산·출하·재고·가동률 지표
+- 기간별 backtest 성과와 모델 진단 결과
 
-### In Progress
+## 현재 진행 상태
 
-- OpenDART 정정 전 원공시 version 보존
-- `research_v0/v1` 결과 해석과 cycle normalization 가정 재검토
+### 구현 완료
 
-### Planned
+현재 1차 분석 대상인 삼성전자와 SK하이닉스를 기준으로 구현했습니다.
 
-- semiconductor cycle regime의 추가 실증 검증
+- 주가·재무·경제·반도체 산업 데이터 수집 및 정제
+- 평가 당시 공개된 정보만 사용하는 분석 데이터 생성
+- 장부가치와 잔여이익 모델을 이용한 적정가치 범위 산출
+- 과거 데이터 기반 모델 검증
+- Airflow 배치 자동화와 데이터·코드 품질 검사
+
+### 개발·검토 중
+
+- 적정가치 산출 알고리즘 추가 테스트
+- 산정값의 신뢰도 기준 정리와 연구 모델의 안정성·설명력 검증
+- OpenDART 정정 전 원공시 버전 보존
+- 가치평가 가정과 반도체 cycle normalization 재검토
+- 반도체 사이클 강세·약세 신호 지표 생성
+- 운영 파이프라인에서 Kafka·Spark 적용 여부 검토
+- KIS OHLCV 외 데이터의 배치 처리 과정 보완
+
+### 향후 구현 예정
+
+- Apache Superset용 조회 데이터셋과 대시보드 구축
+- 적정가치와 실제 주가 비교 시각화
+- 핵심 재무·거시경제·반도체 사이클 지표 시각화
+- 추가 cycle regime 검증
 - 삼성전자 사업부별 SOTP
-- 해외 기업 확장과 일반화 검증
-- Airflow 실행 알림과 장기 운영 모니터링 고도화
+- 해외 반도체 기업 확장
+- 배치 실행 알림과 운영 모니터링 고도화
 
-## 4. Local-first Core Architecture
-
-```text
-KIS Price ──────────────────> Local Bronze ──> Silver market_price
-OpenDART Financials ─────────> Local Bronze ──> Silver financials
-ECOS/KOSIS/FRED Indicators ──> Local Bronze ──> Silver economic_indicators
-                                                       │
-                              ┌────────────────────────┴─────────────────────┐
-                              ▼                                              ▼
-                  Gold fundamental features                       Gold cycle features
-                              └────────────────────────┬─────────────────────┘
-                                                       ▼
-                              Valuation / Backtest (research v0 + diagnostics v1)
-```
-
-Airflow는 원천 incremental, canonical/feature 재생성, data quality gate, as-of, valuation, backtest 및 report의 실행 순서와 재시도를 담당하는 local orchestration layer입니다. Kafka와 Spark는 수업 과제 adapter이며 이 core data path에 포함하지 않습니다.
-
-## 5. 데이터 출력
-
-### Market Price Silver
-
-경로: `data/silver/market_price/canonical.parquet`
+## 데이터 흐름 아키텍처
 
 ```text
-ticker, trading_date, open, high, low, close,
-volume, daily_return, source, adjusted
+KIS / OpenDART / ECOS / KOSIS / FRED
+                    │
+                    ▼
+             Bronze (원천)
+                    │
+                    ▼
+          Silver (정규화 데이터)
+                    │
+                    ▼
+        Gold (feature / as-of dataset)
+                    │
+          ┌─────────┴─────────┐
+          ▼                   ▼
+ Valuation / Backtest   경제·사이클 지표
+          └─────────┬─────────┘
+                    ▼
+       Superset 조회 데이터셋 (예정)
+                    │
+                    ▼
+               Dashboard
 ```
 
-Historical과 incremental batch가 같은 schema와 검증 규칙을 사용합니다. `ticker + trading_date`로 중복을 제거하고 OHLC·null·type을 검증합니다.
+### 주요 결과물
 
-### Financial Silver
+| 구분 | 경로 | 내용 |
+|---|---|---|
+| 시장가격 | `data/silver/market_price/canonical.parquet` | 수정주가 OHLCV |
+| 재무정보 | `data/silver/financials/canonical.parquet` | point-in-time 재무·주식 수·배당 |
+| 경제지표 | `data/silver/economic_indicators/canonical.parquet` | 금리·환율·반도체 산업지표 |
+| 재무 feature | `data/gold/features/fundamental_features.parquet` | ROE·마진·재고·CAPEX·FCF proxy |
+| 모델 입력 | `data/gold/model_inputs/valuation_asof_monthly.parquet` | 월말 기준 as-of 데이터 |
+| 적정가치 | `data/gold/valuation/fair_value_range.parquet` | 기업별 low·base·high 범위 |
+| 검증 결과 | `data/gold/backtest/` | 기간별 backtest 및 report |
 
-경로: `data/silver/financials/canonical.parquet`
+### 저장소 구조
 
-주요 컬럼은 `period_end`, `available_at`, `receipt_no`, 지배주주 귀속 자기자본·순이익, 매출·영업이익, 재고, 현금, 영업현금흐름, CAPEX, 보통주·우선주·전체 유통주식 수와 배당입니다.
-
-### Fundamental Features
-
-경로: `data/gold/features/fundamental_features.parquet`
-
-누적 보고값에서 분기 단독값과 TTM을 계산합니다. `reported_roe_ttm`, `operating_margin_ttm`, `inventory_growth_yoy`, `capex_to_revenue_ttm`, `fcf_proxy_ttm` 등을 제공합니다. KIS 수정주가와 맞추기 위해 공식 corporate-action 설정으로 `price_basis_total_shares_outstanding`, `equity_per_price_basis_share`, `earnings_per_price_basis_share_ttm`을 생성합니다. `roe_ttm_5y_median_candidate`는 연구용 후보 feature이며 확정 valuation 공식이 아닙니다.
-
-### Economic and Cycle Indicators
-
-경로: `data/silver/economic_indicators/canonical.parquet`
-
-ECOS 일별 기준금리·국고채 3년 수익률·원/달러 환율, KOSIS 월별 반도체
-생산·출하·재고지수, FRED 월별 미국 반도체 산업생산·가동률·생산자물가를 같은
-long schema로 저장합니다. 주요 컬럼은 `indicator_id`, `period_end`,
-`available_at`, `value`, `unit`, `availability_basis`입니다. FRED는
-ALFRED 최초발표값과 실제 발표일을 사용합니다.
-
-국내 cycle 후보 feature는
-`data/gold/features/semiconductor_cycle_features.parquet`, FRED 기반 글로벌 후보는
-`data/gold/features/global_semiconductor_cycle_features.parquet`에 저장합니다.
-두 출력 모두 확정 regime 모델이 아니라 fundamental normalization 연구용 입력입니다.
-
-### Valuation and Backtest Outputs
-
-- `data/gold/model_inputs/valuation_asof_monthly.parquet`: 평가일 당시 사용 가능했던 입력
-- `data/gold/valuation/benchmark_valuations.parquet`: Book Value와 no-growth RIM
-- `data/gold/valuation/fair_value_range.parquet`: `research_v0` low/base/high 범위
-- `data/gold/backtest/`: valuation 이후 horizon별 사후 평가
-- `data/gold/backtest/reports/`: ticker·연도·horizon·비중첩 report v1
-- `data/gold/research/cycle_rim_v1/`: sensitivity 및 고정 가정 walk-forward 진단
-
-## 6. Local Development and Batches
-
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[dev,course]'
-cp .env.example .env
+```text
+config/                 기업·계정 매핑
+data/bronze/            원천 데이터
+data/silver/            정규화 데이터
+data/gold/              feature·valuation·backtest 결과
+src/fair_value/         수집·정규화·계산·배치 코드
+airflow/                로컬 스케줄러와 DAG
+docs/                   데이터·모델·검증 명세
+tests/                  자동화 테스트
 ```
 
-Historical Bronze를 canonical 가격 Silver로 재생성합니다.
+상세 설계와 연구 가정은 다음 문서에서 관리합니다.
 
-```bash
-python -m fair_value.jobs.market_price_batch --mode historical
+- `docs/DATA_CONTRACT.md`: 데이터 스키마와 이용 가능 시점 규칙
+- `docs/VALUATION_SPEC.md`: 가치평가 입력·수식·가정
+- `docs/BACKTEST_SPEC.md`: point-in-time 검증 기준
+- `docs/DECISIONS.md`: 주요 설계 결정과 trade-off
+
+---
+
+## 4차시 과제: Kafka·Spark 데이터 처리
+
+> 현재 진행 중인 핵심 데이터 정제·가치평가 파이프라인과 분리된 수업 과제용 처리 과정입니다.
+
+### 1. 데이터·메시지 명세
+
+KIS에서 수집한 삼성전자와 SK하이닉스의 일별 주가 데이터를 Kafka 메시지로 전송했습니다.
+
+#### Kafka 메시지 필드
+
+| 필드명 | JSON 타입 | 의미 |
+|---|---|---|
+| `ticker` | String | 종목코드(`005930`, `000660`) |
+| `trading_date` | String | 거래일, `yyyyMMdd` 형식 |
+| `open` | String | 시가 |
+| `high` | String | 고가 |
+| `low` | String | 저가 |
+| `close` | String | 종가 |
+| `volume` | String | 거래량 |
+| `source` | String | 데이터 출처, 현재 값은 `kis` |
+| `adjusted` | Boolean | 수정주가 적용 여부 |
+
+KIS 원천값을 보존하기 위해 가격과 거래량은 Kafka 전송 단계에서 문자열로 전달하고, Spark 전처리 과정에서 숫자 타입으로 변환했습니다.
+
+#### Kafka 메시지 Key
+
+```text
+ticker:trading_date
 ```
 
-마지막 거래일 다음부터 최신 완료 거래일까지 KIS incremental batch를 실행합니다.
-한국시간 16:10 이전 실행은 당일 미완료 가격을 제외하고 전날까지만 요청합니다.
+예시:
 
-```bash
-python -m fair_value.jobs.market_price_batch --mode incremental
+```text
+000660:20240729
 ```
 
-Airflow 3.3.1은 평일 16:20 Asia/Seoul에 가격·OpenDART·경제지표 갱신부터 valuation과 backtest까지 순차 실행합니다.
+#### Kafka JSON 예시
 
-```bash
-docker compose --profile orchestration up -d --build airflow
-docker exec fair-value-airflow airflow dags list
+```json
+{
+  "ticker": "000660",
+  "trading_date": "20240729",
+  "open": "195000",
+  "high": "195700",
+  "low": "192200",
+  "close": "195600",
+  "volume": "4017366",
+  "source": "kis",
+  "adjusted": true
+}
 ```
 
-컨테이너는 `restart: unless-stopped`로 구성되어 있습니다. Docker Desktop의
-**Start Docker Desktop when you sign in**을 활성화하면 Windows 로그인 후 Airflow도
-재기동됩니다. 예약 시각에 PC가 꺼져 있었다면 `catchup=False`가 최신 run 하나만 생성합니다. KIS는 마지막 Silver 거래일 이후 누락분을 보충하고, OpenDART는 최근 2개 사업연도, 경제지표는 source별 lookback을 재수집합니다.
+#### Kafka Topic
 
-OpenDART 전체 이력을 초기화하거나 최근 자료만 갱신한 뒤 Silver/Gold를 생성합니다.
-
-```bash
-python -m fair_value.jobs.opendart_batch --mode historical
-python -m fair_value.jobs.opendart_batch --mode incremental
-python -m fair_value.jobs.financial_batch
+```text
+fair_value.market_price.raw.v1
 ```
 
-ECOS/KOSIS/FRED 경제·반도체 사이클 지표를 수집하고 Silver/Gold를 생성합니다.
+- Kafka 버전: Apache Kafka 4.0.2
+- 실행 방식: KRaft 단일 Broker
+- 접속 주소: `localhost:29092`
 
-```bash
-python -m fair_value.jobs.economic_batch --mode historical --start-date 2015-01-01
-# 최근 ECOS 7일·KOSIS/FRED 62일을 다시 받아 신규값과 정정을 반영
-python -m fair_value.jobs.economic_batch --mode incremental
-# API 재호출 없이 기존 Bronze에서 재생성
-python -m fair_value.jobs.economic_batch --skip-collect
-```
+### 2. Kafka 이벤트 전송 및 수신
 
-API 재호출 없이 현재 canonical 데이터로 as-of, valuation, backtest를 재생성합니다.
-
-```bash
-python -m fair_value.jobs.data_quality --scope canonical
-python -m fair_value.jobs.asof_dataset
-python -m fair_value.jobs.data_quality --scope asof
-python -m fair_value.jobs.benchmark_valuation
-python -m fair_value.jobs.cycle_rim_valuation
-python -m fair_value.jobs.backtest_v0
-python -m fair_value.jobs.cycle_rim_backtest
-python -m fair_value.jobs.backtest_report
-
-# 수동 research 진단이며 일일 DAG의 모델 선택 단계가 아님
-python -m fair_value.jobs.cycle_rim_research_v1
-```
-
-코드 품질 검사는 다음과 같습니다.
-
-```bash
-pytest
-ruff check .
-ruff format --check .
-mypy src
-```
-
-## 7. Kafka and Spark Course Exercise
-
-Kafka 4.0.2 KRaft broker는 기존 로컬 Kafka와 충돌하지 않도록 `localhost:29092`를 사용합니다.
+#### Kafka 실행
 
 ```bash
 docker compose up -d kafka
+```
 
+#### Producer 실행
+
+KIS Bronze 데이터에서 거래일과 종목코드 순으로 정렬한 후 최신 1,000건을 Kafka로 전송합니다.
+
+```bash
 python -m fair_value.coursework.kafka_producer --limit 1000
+```
+
+Producer 출력:
+
+```text
+topic=fair_value.market_price.raw.v1
+requested_count=1000
+sent_count=1000
+```
+
+`sent_count`는 Kafka Broker가 정상 수신을 확인한 메시지만 집계합니다.
+
+#### Consumer 실행
+
+```bash
 python -m fair_value.coursework.kafka_consumer --expected-count 1000
 ```
 
-실행 결과는 Producer 1,000건 전송, Consumer 1,000건 수신입니다. Topic은 `fair_value.market_price.raw.v1`입니다.
-
-Spark 4.0.4 batch adapter 실행:
-
-```bash
-docker compose --profile course run --rm spark   /opt/spark/bin/spark-submit   --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.4   --conf spark.jars.ivy=/tmp/.ivy2   src/fair_value/coursework/spark_market_price_batch.py
-```
-
-Spark는 Kafka 1,000건을 읽어 type/date normalization, null·OHLC 검증, 중복 제거와 `daily_return` 계산을 수행했습니다. 검증 당시 입력 1,000건, 출력 1,000건, invalid·duplicate 0건이었습니다. 과제 출력은 `data/silver/market_price/course_exercise/`에 저장합니다.
-
-## 8. Valuation and Validation Direction
-
-Primary candidate는 cycle-normalized Residual Income Model이며 Book Value와 no-growth Residual Income을 benchmark로 사용합니다. `research_v0`는 5년 finite fade, point-in-time ROE median, FRED cycle 보정과 parameter scenario를 구현했지만 확정 모델이 아닙니다.
-
-Backtest report v1은 월별 전체 표본과 horizon별 비중첩 표본을 분리해 ticker·연도별로 보고합니다. 비중첩 결과도 V/P–미래수익률 관계가 horizon과 ticker에 따라 불안정하며, `research_v0` range coverage는 약 14~18%입니다. 12M 비중첩 표본은 base variant 기준 14건에 불과합니다.
-
-`research_v1` 진단은 forecast 기간, retention, cycle 조정 폭, ERP를 한 번에 하나씩 바꾼 9개 사전 정의 variant를 비교합니다. 최신 base value 대비 변화는 약 ±5%였지만, 미래수익률로 최적 variant를 선택하지 않습니다. 2021~2026 walk-forward도 모든 가정을 사전에 고정한 evaluation fold입니다. 시장가격은 intrinsic value label이 아니며 현재 결과는 어떤 모델도 채택할 근거가 아닙니다.
-
-## 9. Point-in-Time Caveats
-
-- `period_end`는 경제적 측정 시점, `available_at`은 공시·발표·관측 등 실제 이용 가능 시점입니다.
-- OpenDART 전체 재무제표 API는 일부 연도에 정정공시의 최신 snapshot을 반환합니다. 현재 canonical은 정정 접수일 이전에 해당 값을 사용하지 않지만, 정정 전 원공시 값은 아직 보존하지 않습니다.
-- 삼성전자 초기 네 보고서는 OpenDART 주식 총수 값이 없어 주당 feature가 null입니다. 미래 주식 수로 역보간하지 않습니다.
-- KOSIS 과거 값은 최신 source snapshot입니다. `available_at`은 원천 수정일과 월말+35일 중 늦은 날짜를 사용하지만, 최초 공표·정정 전 값은 아직 보존하지 않습니다.
-- FRED는 point-in-time 안전성을 위해 ALFRED 최초발표값만 사용합니다. 가동률 최초발표 이력은 2022년 8월부터 제공되며 그 이전 feature는 null입니다. 후속 개정값을 당시 이용 가능 시점별로 재구성하는 full-vintage 처리는 아직 구현하지 않았습니다.
-- 삼성전자 지분에는 우선주가 포함되므로 주당 지표는 보통주 전용 BVPS가 아니라 전체 유통주식 기준 값입니다.
-- KIS는 전 기간 수정주가입니다. 삼성전자 2018년 50:1 액면분할 이전 보고 주식 수에는 50배 unit factor를 적용해 `equity_per_price_basis_share`를 만들며, reported-share 값은 audit용으로 보존합니다.
-
-## 10. Repository Structure
+Consumer 출력:
 
 ```text
-config/                         기업·계정 mapping
-data/bronze/                    KIS/OpenDART raw
-data/silver/                    canonical normalized data
-data/gold/features/             derived fundamental features
-src/fair_value/collectors/      KIS/OpenDART/ECOS/KOSIS/FRED collectors
-src/fair_value/normalization/   canonical transformations
-src/fair_value/features/        reusable feature calculations
-src/fair_value/datasets/        point-in-time as-of datasets
-src/fair_value/valuation/       pure benchmark and research valuation logic
-src/fair_value/backtest/        model-independent future evaluation/report
-src/fair_value/quality/         canonical 및 as-of fail-fast checks
-src/fair_value/jobs/            local batch entrypoints
-src/fair_value/coursework/      Kafka/Spark course adapters
-airflow/                        local scheduler image and DAGs
-docs/                           data/model/backtest decisions and specifications
-tests/                          unit tests and small fixtures
+topic=fair_value.market_price.raw.v1
+received_count=1000
 ```
 
-`.env`, API key, token과 실제 `data/`는 Git에 커밋하지 않습니다.
+Consumer는 다음 내용을 검증했습니다.
 
-## 11. Documentation
+- 메시지 값이 null이 아닌지 확인
+- 메시지가 정상적인 JSON 객체인지 확인
+- 필수 필드 9개가 모두 포함되어 있는지 확인
+- 제한 시간 안에 1,000건을 모두 수신했는지 확인
 
-- `docs/DECISIONS.md`: 현재 architecture/model 결정과 trade-off
-- `docs/VALUATION_SPEC.md`: benchmark, `research_v0`, sensitivity 입력·수식·가정·한계
-- `docs/DATA_CONTRACT.md`: canonical schema, 기간, availability 규칙
-- `docs/BACKTEST_SPEC.md`: point-in-time·future evaluation·모델 선택 기준
+#### Kafka 처리 결과
+
+| 항목 | 건수 |
+|---|---:|
+| Producer 요청 | 1,000건 |
+| Kafka 전송 성공 | 1,000건 |
+| Consumer 수신 성공 | 1,000건 |
+| 전송 실패 | 0건 |
+
+### 3. Spark 전처리 및 저장
+
+Kafka로 전송한 것과 동일한 JSON 구조를 Spark 4.0.4 배치 작업으로 처리했습니다.
+
+#### Spark 실행 명령
+
+```bash
+docker compose --profile course run --rm spark \
+  /opt/spark/bin/spark-submit \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.4 \
+  --conf spark.jars.ivy=/tmp/.ivy2 \
+  src/fair_value/coursework/spark_market_price_batch.py
+```
+
+Spark는 Kafka Topic의 `earliest`부터 `latest`까지 데이터를 읽는 배치 방식으로 동작합니다.
+
+#### 전처리 내용
+
+1. Kafka 메시지의 JSON 구조 해석
+2. 종목코드와 출처의 앞뒤 공백 제거
+3. `trading_date`를 Date 타입으로 변환
+4. OHLC와 거래량을 Int64 타입으로 변환
+5. 필수 필드의 null 및 타입 오류 검사
+6. 시가·고가·저가·종가와 거래량 유효성 검사
+7. `ticker + trading_date` 기준 중복 제거
+8. 종목별 전일 종가 대비 일간 수익률 계산
+9. 결과를 Snappy 압축 Parquet 형식으로 저장
+
+OHLC 데이터는 다음 조건으로 검증했습니다.
+
+```text
+open > 0
+high > 0
+low > 0
+close > 0
+volume >= 0
+high >= open, low, close
+low <= open, high, close
+```
+
+일간 수익률 계산식:
+
+```text
+daily_return = close / previous_close - 1
+```
+
+종목별 첫 거래일은 이전 종가가 없으므로 `daily_return`이 null입니다.
+
+#### Spark 처리 결과
+
+| 항목 | 건수 |
+|---|---:|
+| Kafka 입력 | 1,000건 |
+| JSON 해석 성공 | 1,000건 |
+| null 또는 타입 오류 | 0건 |
+| OHLC 오류 | 0건 |
+| 제거된 중복 | 0건 |
+| 최종 출력 | 1,000건 |
+
+실제 저장 결과는 삼성전자 500건, SK하이닉스 500건으로 총 1,000건입니다.
+
+```text
+데이터 기간: 2024-07-29 ~ 2026-08-20
+```
+
+#### 최종 컬럼
+
+| 컬럼명 | Spark 타입 | 의미 |
+|---|---|---|
+| `ticker` | String | 종목코드 |
+| `trading_date` | Date | 거래일 |
+| `open` | Long | 시가 |
+| `high` | Long | 고가 |
+| `low` | Long | 저가 |
+| `close` | Long | 종가 |
+| `volume` | Long | 거래량 |
+| `daily_return` | Double | 전일 종가 대비 일간 수익률 |
+| `source` | String | 데이터 출처 |
+| `adjusted` | Boolean | 수정주가 적용 여부 |
+
+최종 Spark Schema:
+
+```text
+struct<
+  ticker:string,
+  trading_date:date,
+  open:bigint,
+  high:bigint,
+  low:bigint,
+  close:bigint,
+  volume:bigint,
+  daily_return:double,
+  source:string,
+  adjusted:boolean
+>
+```
+
+#### 저장 위치와 형식
+
+프로젝트 저장 위치:
+
+```text
+data/silver/market_price/course_exercise/
+```
+
+Spark 컨테이너 내부 위치:
+
+```text
+/opt/fair_value/data/silver/market_price/course_exercise
+```
+
+저장 형식:
+
+```text
+Apache Parquet + Snappy 압축
+```
+
+Spark는 여러 개의 `part-*.snappy.parquet` 파일과 작업 완료를 나타내는 `_SUCCESS` 파일을 생성합니다. 작업을 다시 실행하면 기존 결과를 덮어씁니다.

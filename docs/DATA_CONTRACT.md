@@ -1,46 +1,45 @@
-# Data Contract
+# 데이터 계약
 
-## Layer Boundaries
+## 데이터 계층
 
-Raw API responses and source metadata live under `data/bronze/`. Canonical typed records live
-under `data/silver/`. Reusable inputs and model outputs live under `data/gold/`. Historical and
-incremental loads must write the same canonical schema.
+API 원본 응답과 원천 메타데이터는 `data/bronze/`에 저장합니다. 정규화되고 자료형이 지정된 표준 레코드는 `data/silver/`에 저장합니다. 재사용 가능한 입력과 모델
+출력은 `data/gold/`에 저장합니다. 전체 이력 적재와 증분 적재는 동일한 표준 스키마로 저장해야 합니다.
 
-## Canonical Datasets
+## 표준 데이터셋(Canonical)
 
-| Dataset | Key | Temporal fields | Current coverage |
+| 데이터셋 | 키 | 시간 관련 필드 | 현재 데이터 범위 |
 | --- | --- | --- | --- |
-| `silver/market_price/canonical.parquet` | ticker, trading_date | trading_date | 14,906 rows; 005930 from 1996-08-20, 000660 from 1996-12-26, through 2026-08-24 |
-| `silver/financials/canonical.parquet` | ticker, period_end, report_code | period_end, available_at | 86 rows; 2015-12-31 to 2026-06-30 |
-| `silver/economic_indicators/canonical.parquet` | source, indicator_id, period_end | period_end, available_at | 10,720 rows; ECOS/KOSIS/FRED from 2015, subject to source coverage |
-| `gold/model_inputs/valuation_asof_monthly.parquet` | ticker, valuation_date | valuation_date plus source availability | 250 rows |
-| `gold/valuation/benchmark_valuations.parquet` | ticker, valuation_date, model_name | financial period/availability | 466 rows |
-| `gold/valuation/fair_value_range.parquet` | ticker, valuation_date | financial period/availability | 188 rows |
-| `gold/backtest/reports/combined_results.parquet` | model, ticker, valuation_date, horizon | valuation plus future evaluation dates | 2,616 rows |
-| `gold/research/cycle_rim_v1/sensitivity_ranges.parquet` | variant, ticker, valuation_date | financial period/availability | 1,692 rows |
+| `silver/market_price/canonical.parquet` | ticker, trading_date | trading_date | 14,906행; 005930은 1996-08-20부터, 000660은 1996-12-26부터 2026-08-24까지 |
+| `silver/financials/canonical.parquet` | ticker, period_end, report_code | period_end, available_at | 86행; 2015-12-31부터 2026-06-30까지 |
+| `silver/economic_indicators/canonical.parquet` | source, indicator_id, period_end | period_end, available_at | 10,720행; 원천 제공 범위에 따라 ECOS/KOSIS/FRED 2015년부터 |
+| `gold/model_inputs/valuation_asof_monthly.parquet` | ticker, valuation_date | valuation_date와 원천별 이용 가능 시점 | 250행 |
+| `gold/valuation/benchmark_valuations.parquet` | ticker, valuation_date, model_name | 재무 기간과 이용 가능 시점 | 466행 |
+| `gold/valuation/fair_value_range.parquet` | ticker, valuation_date | 재무 기간과 이용 가능 시점 | 188행 |
+| `gold/backtest/reports/combined_results.parquet` | model, ticker, valuation_date, horizon | 가치평가일과 미래 평가일 | 2,616행 |
+| `gold/research/cycle_rim_v1/sensitivity_ranges.parquet` | variant, ticker, valuation_date | 재무 기간과 이용 가능 시점 | 1,692행 |
 
-Market Price requires typed OHLCV, unique `ticker + trading_date`, valid
-`low <= open/close <= high`, `daily_return`, and `adjusted=true`. Financial inputs preserve
-reporting period and filing availability separately. Per-share models use
-`equity_per_price_basis_share` and `earnings_per_price_basis_share_ttm`; these use parent equity
-and total distributed common plus preferred shares and are not Samsung common-only BVPS.
+시장가격 데이터는 자료형이 지정된 OHLCV, 고유한 `ticker + trading_date`, 유효한
+`low <= open/close <= high`, `daily_return`, `adjusted=true`를 충족해야 합니다.
+재무 입력은 회계 기간과 공시 이용 가능 시점을 별도로 보존합니다. 주당 가치평가
+모델은 `equity_per_price_basis_share`와
+`earnings_per_price_basis_share_ttm`을 사용합니다. 이 값은 지배기업 소유주지분과
+보통주·우선주 전체 유통주식 수를 기준으로 하며, 삼성전자 보통주 전용 BVPS가 아닙니다.
 
-`config/corporate_actions.yaml` is the source of truth for price-unit conversions. Reported share
-counts remain unchanged. The feature layer multiplies pre-effective-date shares by later split
-multipliers so per-share financials match KIS ex-post adjusted prices. Every material adjacent
-share-count jump must match an explicit action.
+`config/corporate_actions.yaml`은 가격 단위 변환의 기준 정보입니다. 공시된 주식 수는
+변경하지 않습니다. 특성값 계층에서는 적용일 이전의 주식 수에 이후 액면분할 배수를
+곱해, 주당 재무정보의 단위를 KIS 사후 수정주가와 일치시킵니다. 인접 기간의 중요한
+주식 수 변동에는 반드시 명시적인 기업행위(corporate action)가 연결되어야 합니다.
 
-## Availability Rules
+## 이용 가능 시점 규칙
 
-A model row may join the latest economic period whose observation was available by the valuation
-date. A late correction to an older period must not replace a newer period on the availability
-frontier. OpenDART and KOSIS currently retain important latest-snapshot limitations described in
-the README; neither may be backfilled before its stored availability date. FRED model inputs use
-ALFRED initial-release observations.
+모델 행에는 평가일까지 관측 가능했던 경제지표 중 가장 최근 경제 기간의 값을 연결할
+수 있습니다. 과거 기간에 대한 늦은 정정값이 이용 가능 시점 기준으로 더 최신인 경제
+기간을 대체해서는 안 됩니다. OpenDART와 KOSIS에는 README에 설명된 최신 스냅샷
+중심의 제약이 남아 있습니다. 두 원천 모두 저장된 `available_at`보다 이전 시점으로
+소급 적용할 수 없습니다. FRED 모델 입력은 ALFRED 최초 발표 관측값을 사용합니다.
 
-The `data_quality` job rejects duplicate keys, invalid OHLCV/returns, non-adjusted market
-prices, uncovered share-count jumps, invalid per-share calculations, temporal violations, and
-future as-of availability. Four initial Samsung share-count nulls remain warnings and are excluded
-from per-share valuations.
+`data_quality` 작업은 중복 키, 잘못된 OHLCV·수익률, 미수정 시장가격, 기업행위로 설명되지 않는 주식 수 변동, 잘못된 주당 계산, 시간 순서 위반과 미래
+as-of 데이터 사용을 거부합니다. 삼성전자 초기 네 기간의 주식 수 `null`은 경고로
+남기며 주당 가치평가에서는 제외합니다.
 
-Generated datasets, Bronze payloads, and credentials are local artifacts and are not committed.
+생성된 데이터셋, Bronze 원본과 인증정보는 로컬 산출물이므로 Git에 커밋하지 않습니다.
