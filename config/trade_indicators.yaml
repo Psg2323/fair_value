@@ -1,0 +1,34 @@
+customs:
+  start_period: "201501"
+  hs_codes:
+    semiconductor_devices: "8541"
+    electronic_integrated_circuits: "8542"
+    semiconductor_manufacturing_equipment: "8486"
+
+comtrade:
+  start_period: "201501"
+  partner_code: "0"
+  flow_codes:
+    - X
+    - M
+  max_records: 2500
+  hs_codes:
+    semiconductor_devices: "8541"
+    electronic_integrated_circuits: "8542"
+    semiconductor_manufacturing_equipment: "8486"
+  reporters:
+    south_korea:
+      name: South Korea
+      code: "410"
+    china:
+      name: China
+      code: "156"
+    japan:
+      name: Japan
+      code: "392"
+    united_states:
+      name: United States
+      code: "842"
+    other_asia:
+      name: Other Asia
+      code: "490"

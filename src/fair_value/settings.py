@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     ecos_api_key: SecretStr = SecretStr("")
     kosis_api_key: SecretStr = SecretStr("")
     fred_api_key: SecretStr = SecretStr("")
+    customs_api_key: SecretStr = SecretStr("")
+    un_comtrade_api_key: SecretStr = SecretStr("")
 
     @property
     def kis_base_url(self) -> str:

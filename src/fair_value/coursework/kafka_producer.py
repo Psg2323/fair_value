@@ -2,17 +2,23 @@ import argparse
 import json
 from collections.abc import Sequence
 from pathlib import Path
-from typing import cast
+from typing import Protocol, cast
 
 from confluent_kafka import KafkaError, Message, Producer
 
 from fair_value.coursework.market_price_event import (
-    MarketPriceRawEvent,
     select_latest_events,
 )
 
 DEFAULT_TOPIC = "fair_value.market_price.raw.v1"
 DEFAULT_BRONZE_ROOT = Path("data/bronze/kis/daily_prices")
+
+
+class KafkaEvent(Protocol):
+    @property
+    def message_key(self) -> str: ...
+
+    def to_dict(self) -> dict[str, object]: ...
 
 
 def load_kis_documents(bronze_root: Path) -> list[dict[str, object]]:
@@ -37,7 +43,7 @@ def load_kis_documents(bronze_root: Path) -> list[dict[str, object]]:
 
 
 def produce_events(
-    events: Sequence[MarketPriceRawEvent],
+    events: Sequence[KafkaEvent],
     bootstrap_servers: str,
     topic: str,
     timeout_seconds: float,

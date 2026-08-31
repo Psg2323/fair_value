@@ -62,6 +62,7 @@ def build_canonical_market_price() -> tuple[pl.DataFrame, MarketPriceQualityRepo
 def collect_incremental_prices(
     frame: pl.DataFrame,
     end_date: date,
+    bootstrap_start_date: date = date(2015, 1, 1),
 ) -> list[tuple[str, date, date, int]]:
     companies = load_companies()
     results: list[tuple[str, date, date, int]] = []
@@ -71,15 +72,13 @@ def collect_incremental_prices(
             if not company.enabled:
                 continue
 
-            latest_value = (
-                frame.filter(pl.col("ticker") == company.ticker)
-                .select(pl.col("trading_date").max())
-                .item()
+            ticker_rows = frame.filter(pl.col("ticker") == company.ticker)
+            latest_value = ticker_rows.select(pl.col("trading_date").max()).item()
+            start_date = (
+                latest_value + timedelta(days=1)
+                if isinstance(latest_value, date)
+                else bootstrap_start_date
             )
-            if not isinstance(latest_value, date):
-                raise ValueError(f"No canonical trading date for ticker {company.ticker}")
-
-            start_date = latest_value + timedelta(days=1)
 
             if start_date > end_date:
                 results.append((company.ticker, start_date, end_date, 0))
@@ -120,6 +119,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="incremental",
     )
     parser.add_argument("--end-date", type=date.fromisoformat)
+    parser.add_argument(
+        "--bootstrap-start-date",
+        type=date.fromisoformat,
+        default=date(2015, 1, 1),
+        help="First date collected for an enabled ticker missing from Silver.",
+    )
     return parser
 
 
@@ -145,7 +150,11 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     if args.mode == "incremental":
         end_date = resolve_incremental_end_date(args.end_date)
-        incremental_results = collect_incremental_prices(frame, end_date)
+        incremental_results = collect_incremental_prices(
+            frame,
+            end_date,
+            bootstrap_start_date=args.bootstrap_start_date,
+        )
 
         for ticker, start_date, requested_end, record_count in incremental_results:
             print(

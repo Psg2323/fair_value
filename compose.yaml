@@ -37,7 +37,7 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    user: "185:1000"
+    user: "185:${HOST_GID:-1000}"
     working_dir: /opt/fair_value
     volumes:
       - .:/opt/fair_value
@@ -48,6 +48,9 @@ services:
       context: .
       dockerfile: airflow/Dockerfile
     image: fair-value-airflow:3.3.1-python3.12
+    depends_on:
+      kafka:
+        condition: service_healthy
     profiles: ["orchestration"]
     container_name: fair-value-airflow
     restart: unless-stopped

@@ -25,6 +25,7 @@ def consume_events(
     expected_count: int,
     timeout_seconds: float,
     group_id: str | None = None,
+    expected_fields: set[str] | None = None,
 ) -> int:
     """Consume and validate the expected number of raw market-price events."""
     if expected_count <= 0:
@@ -63,7 +64,7 @@ def consume_events(
             if not isinstance(payload, dict):
                 raise ValueError("Kafka message value must be a JSON object")
 
-            missing_fields = EXPECTED_FIELDS.difference(payload)
+            missing_fields = (expected_fields or EXPECTED_FIELDS).difference(payload)
 
             if missing_fields:
                 missing_text = ", ".join(sorted(missing_fields))

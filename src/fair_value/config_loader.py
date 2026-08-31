@@ -19,6 +19,7 @@ class CompanyConfig(BaseModel):
     currency: str
     enabled: bool = True
     opendart_corp_code: str
+    segment: str = "semiconductor"
 
 
 class CompaniesConfig(BaseModel):
@@ -95,6 +96,30 @@ class CycleIndicatorsConfig(BaseModel):
     ecos: dict[str, EcosIndicatorConfig]
     kosis: dict[str, KosisIndicatorConfig]
     fred: dict[str, FredIndicatorConfig]
+
+
+class CustomsTradeConfig(BaseModel):
+    hs_codes: dict[str, str]
+    start_period: str
+
+
+class ComtradeReporterConfig(BaseModel):
+    name: str
+    code: str
+
+
+class ComtradeConfig(BaseModel):
+    reporters: dict[str, ComtradeReporterConfig]
+    hs_codes: dict[str, str]
+    flow_codes: list[Literal["X", "M"]]
+    partner_code: str = "0"
+    start_period: str
+    max_records: int = 2500
+
+
+class TradeIndicatorsConfig(BaseModel):
+    customs: CustomsTradeConfig
+    comtrade: ComtradeConfig
 
 
 class CostOfEquityConfig(BaseModel):
@@ -187,6 +212,12 @@ def load_cycle_indicators(path: Path | None = None) -> CycleIndicatorsConfig:
     """Load and validate economic and semiconductor-cycle series mappings."""
     config_path = path or PROJECT_ROOT / "config" / "cycle_indicators.yaml"
     return CycleIndicatorsConfig.model_validate(_load_yaml(config_path))
+
+
+def load_trade_indicators(path: Path | None = None) -> TradeIndicatorsConfig:
+    """Load and validate customs and UN Comtrade series mappings."""
+    config_path = path or PROJECT_ROOT / "config" / "trade_indicators.yaml"
+    return TradeIndicatorsConfig.model_validate(_load_yaml(config_path))
 
 
 def load_valuation(path: Path | None = None) -> ValuationConfig:

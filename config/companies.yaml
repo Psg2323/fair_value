@@ -7,6 +7,7 @@ companies:
     exchange: KRX
     currency: KRW
     enabled: true
+    segment: integrated_device_manufacturer
 
   sk_hynix:
     name_ko: SK하이닉스
@@ -16,3 +17,185 @@ companies:
     exchange: KRX
     currency: KRW
     enabled: true
+    segment: integrated_device_manufacturer
+
+  db_hitek:
+    name_ko: DB하이텍
+    name_en: DB HiTek
+    ticker: "000990"
+    opendart_corp_code: "00160843"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: foundry
+
+  lx_semicon:
+    name_ko: LX세미콘
+    name_en: LX Semicon
+    ticker: "108320"
+    opendart_corp_code: "00525934"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: fabless
+
+  jeju_semiconductor:
+    name_ko: 제주반도체
+    name_en: Jeju Semiconductor
+    ticker: "080220"
+    opendart_corp_code: "00447487"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: fabless
+
+  hanmi_semiconductor:
+    name_ko: 한미반도체
+    name_en: Hanmi Semiconductor
+    ticker: "042700"
+    opendart_corp_code: "00161383"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  hpsp:
+    name_ko: HPSP
+    name_en: HPSP
+    ticker: "403870"
+    opendart_corp_code: "01288827"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  wonik_ips:
+    name_ko: 원익IPS
+    name_en: Wonik IPS
+    ticker: "240810"
+    opendart_corp_code: "01135941"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  jusung_engineering:
+    name_ko: 주성엔지니어링
+    name_en: Jusung Engineering
+    ticker: "036930"
+    opendart_corp_code: "00252135"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  eugene_technology:
+    name_ko: 유진테크
+    name_en: Eugene Technology
+    ticker: "084370"
+    opendart_corp_code: "00531014"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  tes:
+    name_ko: 테스
+    name_en: TES
+    ticker: "095610"
+    opendart_corp_code: "00524421"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  psk:
+    name_ko: 피에스케이
+    name_en: PSK
+    ticker: "319660"
+    opendart_corp_code: "01365825"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  eo_technics:
+    name_ko: 이오테크닉스
+    name_en: EO Technics
+    ticker: "039030"
+    opendart_corp_code: "00246417"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  techwing:
+    name_ko: 테크윙
+    name_en: Techwing
+    ticker: "089030"
+    opendart_corp_code: "00535676"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: equipment
+
+  soulbrain:
+    name_ko: 솔브레인
+    name_en: Soulbrain
+    ticker: "357780"
+    opendart_corp_code: "01489648"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: materials
+
+  dongjin_semichem:
+    name_ko: 동진쎄미켐
+    name_en: Dongjin Semichem
+    ticker: "005290"
+    opendart_corp_code: "00118804"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: materials
+
+  tck:
+    name_ko: 티씨케이
+    name_en: TCK
+    ticker: "064760"
+    opendart_corp_code: "00245472"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: materials
+
+  hana_micron:
+    name_ko: 하나마이크론
+    name_en: Hana Micron
+    ticker: "067310"
+    opendart_corp_code: "00445054"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: packaging_and_test
+
+
+  leeno_industrial:
+    name_ko: 리노공업
+    name_en: Leeno Industrial
+    ticker: "058470"
+    opendart_corp_code: "00369657"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: test_components
+
+  isc:
+    name_ko: ISC
+    name_en: ISC
+    ticker: "095340"
+    opendart_corp_code: "00572905"
+    exchange: KRX
+    currency: KRW
+    enabled: true
+    segment: test_components

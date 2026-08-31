@@ -17,7 +17,8 @@ Python 3.12 기반 Apache Airflow 3.3.1을 Docker Compose `orchestration` 프로
 - 멱등성을 보장하는 KIS 증분 작업이 마지막 표준 거래일 이후의 모든 날짜를 복구합니다.
 - 수동 실행 또는 시작 시 실행을 포함해 16:10 Asia/Seoul 이전에는 당일 데이터를 제외합니다.
 - Docker Desktop이 시작될 때 컨테이너가 다시 실행되도록 `restart: unless-stopped`를 사용합니다.
-- Kafka와 Spark는 운영 경로에서 제외하고 수업용 어댑터로 유지합니다.
+- 가치평가 일일 DAG는 Kafka·Spark에 의존하지 않지만, 20종목 1분봉 market-state
+  경로에서는 재생 가능한 event log와 bounded batch adapter로 사용합니다.
 
 ### 영향
 
@@ -33,7 +34,8 @@ Python 3.12 기반 Apache Airflow 3.3.1을 Docker Compose `orchestration` 프로
 평일 16:20 Asia/Seoul에 실행되는 하나의 DAG에서 KIS 증분 주가, 최근 OpenDART 갱신,
 경제지표, 정규화, as-of 입력, 가치평가와 사후 평가를 처리합니다. OpenDART 정기 실행은
 현재 사업연도와 직전 사업연도를 갱신하며, 전체 이력 수집은 별도 `historical` 모드로
-유지합니다. Kafka와 Spark는 이 운영 경로에 포함하지 않습니다.
+유지합니다. Kafka와 Spark는 fundamental valuation 경로를 대체하지 않으며, 별도
+market-state 경로의 원천 재생·대량 정제에만 사용합니다.
 
 ### 영향
 
@@ -101,3 +103,37 @@ As-of 데이터 생성 전에 표준 데이터 품질 검사를 실행하고, �
 결과는 최적화된 모델이라고 주장하지 않으면서 가정에 대한 민감도와 시간에 따른
 불안정성을 보여줍니다. 연구 v1은 일별 Airflow 모델 선택 경로 밖에 있으며,
 경기 정규화 RIM을 연구 후보 이상의 상태로 승격하지 않습니다.
+
+## 2026-08-31 - 20종목 1분봉 market-state 경로
+
+### 배경
+
+일봉만으로는 같은 종가 수익률 안의 변동성·거래 집중·장중 추세를 구분할 수 없습니다.
+20종목 1분봉은 하루 약 7,500건으로 작지만 재생·장애 복구 실험에도 유용합니다.
+
+### 결정
+
+- KIS raw 응답을 Bronze에 보존하고 원천에 없는 분봉 OHLC는 만들지 않습니다.
+- Kafka는 동일 Bronze를 재생하는 event log, Spark는 bounded normalization adapter입니다.
+- `ticker + timestamp` 중복 제거 후 Silver Parquet와 종목·일자별 feature를 만듭니다.
+- market-state는 intrinsic value가 아니라 시장 반응과 valuation gap의 보조 정보입니다.
+
+### 영향
+
+가치평가 계산은 Kafka·Spark 가용성에 의존하지 않습니다. 데이터 규모만으로 분산 처리를
+정당화하지 않으며, replay·schema enforcement·quarantine·복구 가능성을 근거로 사용합니다.
+
+## 2026-08-31 - 관세청·UN Comtrade 무역 cycle 입력
+
+### 결정
+
+HS 8541·8542·8486의 월별 수출입을 반도체 cycle 보조 입력 후보로 수집합니다.
+관세청은 한국 총수출입, UN Comtrade는 한국·중국·일본·미국·대만의 세계 교역을
+정규화합니다. trade value·무역수지·YoY·3개월 momentum까지만 파생합니다.
+
+### 영향
+
+무역 지표는 주가 직접 예측기나 확정 regime label이 아닙니다. 원 발표 빈티지가 없는
+historical 값은 최초 수집일 이전 평가에 사용하지 않고, 실증 backtest 후 채택합니다.
+최초 적재에서 대만 대체 코드 490은 응답이 0건이므로 별도 국가 코드·제공 범위 검증 전에는
+대만 지표가 확보됐다고 간주하지 않습니다. 관세청은 해당 API 활용신청 승인 후 활성화합니다.

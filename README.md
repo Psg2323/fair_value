@@ -2,25 +2,26 @@
 
 ## 프로젝트 개요
 
-반도체 관련 기업의 재무·시장·반도체 경기 데이터를 결합해 **적정가치 범위**를 산출하고, 계산 결과와 주요 경제지표를 **Apache Superset 대시보드**에서 한눈에 확인할 수 있도록 만드는 프로젝트입니다.
+기업의 fundamental data와 반도체 산업 사이클을 결합해 intrinsic fair value range를
+산정하고, point-in-time·walk-forward 방식으로 유효성을 검증하는 local-first 프로젝트입니다.
 
 ## 분석 대상
 
-분석 대상을 1차부터 3차까지 단계적으로 확대할 예정입니다.
+가치평가 MVP와 시장 데이터 수집 범위를 구분합니다.
 
 | 단계 | 분류 | 대상 기업 |
 |---|---|---|
-| 1차(MVP) | 메모리 반도체 | 삼성전자, SK하이닉스 |
-| 2차 | 반도체 설계·후공정 | DB하이텍, LX세미콘, 제주반도체, 한미반도체 |
-| 3차 | 반도체 소재·부품·장비 | HPSP, 주성엔지니어링, 원익IPS, 한솔케미칼, 솔브레인 |
+| 가치평가 MVP | 메모리 반도체 | 삼성전자, SK하이닉스 |
+| 시장 데이터 | 반도체·장비 | DB하이텍, LX세미콘, 제주반도체, 한미반도체, HPSP, 원익IPS, 주성엔지니어링, 유진테크, 테스, PSK, 이오테크닉스, 테크윙 |
+| 시장 데이터 | 소재·부품·후공정 | 솔브레인, 동진쎄미켐, 티씨케이, 하나마이크론, 리노공업, ISC |
 
-## 최종 시스템
+## 목표 출력
 
 ```text
-기업 적정가치 산출 → 경제지표 계산 → Apache Superset 시각화
+fundamental·cycle 입력 → fair_value_low/base/high → point-in-time backtest
 ```
 
-최종 플랫폼에서는 다음 내용을 기업·평가일별로 탐색할 수 있도록 구성합니다.
+단기 주가를 직접 예측하거나 시장가격을 intrinsic value의 정답으로 사용하지 않습니다.
 
 - 현재 주가와 적정가치 low/base/high 비교
 - 가치평가 premium·discount 추이
@@ -33,30 +34,29 @@
 
 ### 구현 완료
 
-현재 1차 분석 대상인 삼성전자와 SK하이닉스를 기준으로 구현했습니다.
+가치평가 결과와 backtest는 삼성전자·SK하이닉스에 한정됩니다.
 
-- 주가·재무·경제·반도체 산업 데이터 수집 및 정제
+- KIS 20종목 일봉 61,787건과 2026-08-28 1분봉 7,540건 수집·정규화
+- OpenDART raw collector와 수집 함수, ECOS·KOSIS·FRED 수집 파이프라인
 - 평가 당시 공개된 정보만 사용하는 분석 데이터 생성
-- 장부가치와 잔여이익 모델을 이용한 적정가치 범위 산출
-- 과거 데이터 기반 모델 검증
+- Book Value·no-growth RIM benchmark와 연구용 cycle-RIM 범위
+- 1M·3M·6M·12M point-in-time backtest 및 walk-forward 보고
 - Airflow 배치 자동화와 데이터·코드 품질 검사
+- Kafka 4.0.2 replay와 Spark 4.0.4 정규화·중복 제거·Parquet 저장
+- 20종목 일별 market-state feature와 valuation-gap snapshot
+- UN Comtrade 반도체 무역 3,105개 빈티지(경제 키 3,078개)와 trade-cycle feature 516행
 
 ### 개발·검토 중
 
-- 적정가치 산출 알고리즘 추가 테스트
-- 산정값의 신뢰도 기준 정리와 연구 모델의 안정성·설명력 검증
+- 관세청 품목별 수출입 API 활용신청 승인과 최초 historical load
+- trade-cycle feature와 기존 cycle signal 결합 검증
+- 적정가치 가정의 안정성·설명력 검증
 - OpenDART 정정 전 원공시 버전 보존
-- 가치평가 가정과 반도체 cycle normalization 재검토
-- 반도체 사이클 강세·약세 신호 지표 생성
-- 운영 파이프라인에서 Kafka·Spark 적용 여부 검토
-- KIS OHLCV 외 데이터의 배치 처리 과정 보완
+- Airflow에서 Kafka 이후 Spark 실행을 연결하는 운영 방식 검토
 
 ### 향후 구현 예정
 
-- Apache Superset용 조회 데이터셋과 대시보드 구축
-- 적정가치와 실제 주가 비교 시각화
-- 핵심 재무·거시경제·반도체 사이클 지표 시각화
-- 추가 cycle regime 검증
+- cycle-normalized RIM의 사전 명세와 추가 regime 검증
 - 삼성전자 사업부별 SOTP
 - 해외 반도체 기업 확장
 - 배치 실행 알림과 운영 모니터링 고도화
@@ -64,26 +64,22 @@
 ## 데이터 흐름 아키텍처
 
 ```text
-KIS / OpenDART / ECOS / KOSIS / FRED
-                    │
-                    ▼
-             Bronze (원천)
-                    │
-                    ▼
-          Silver (정규화 데이터)
-                    │
-                    ▼
-        Gold (feature / as-of dataset)
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
- Valuation / Backtest   경제·사이클 지표
-          └─────────┬─────────┘
-                    ▼
-       Superset 조회 데이터셋 (예정)
-                    │
-                    ▼
-               Dashboard
+KIS / OpenDART / ECOS / KOSIS / FRED / Customs / UN Comtrade
+                              │
+                              ▼
+                       Bronze (원천)
+                              │
+                              ▼
+                    Silver (canonical)
+                              │
+                              ▼
+                Gold (feature / as-of dataset)
+                              │
+                ┌─────────────┴─────────────┐
+                ▼                           ▼
+       Valuation / Backtest        Cycle / Market State
+
+KIS minute Bronze → Kafka replay → Spark batch → Silver / daily feature
 ```
 
 ### 주요 결과물
@@ -93,7 +89,11 @@ KIS / OpenDART / ECOS / KOSIS / FRED
 | 시장가격 | `data/silver/market_price/canonical.parquet` | 수정주가 OHLCV |
 | 재무정보 | `data/silver/financials/canonical.parquet` | point-in-time 재무·주식 수·배당 |
 | 경제지표 | `data/silver/economic_indicators/canonical.parquet` | 금리·환율·반도체 산업지표 |
+| 1분봉 | `data/silver/market_price_minute/canonical.parquet` | KIS 체결가·분당 거래량 |
+| 무역 | `data/silver/trade_flows/canonical.parquet` | UN Comtrade 월별 HS 무역 3,105개 빈티지(경제 키 3,078개); 관세청 승인 대기 |
 | 재무 feature | `data/gold/features/fundamental_features.parquet` | ROE·마진·재고·CAPEX·FCF proxy |
+| 시장 feature | `data/gold/features/market_state_daily.parquet` | VWAP·실현변동성·거래량 집중도 |
+| 무역 cycle | `data/gold/features/trade_cycle_features.parquet` | 수출입·무역수지·YoY·3개월 momentum 516행 |
 | 모델 입력 | `data/gold/model_inputs/valuation_asof_monthly.parquet` | 월말 기준 as-of 데이터 |
 | 적정가치 | `data/gold/valuation/fair_value_range.parquet` | 기업별 low·base·high 범위 |
 | 검증 결과 | `data/gold/backtest/` | 기간별 backtest 및 report |
@@ -122,7 +122,7 @@ tests/                  자동화 테스트
 
 ## 4차시 과제: Kafka·Spark 데이터 처리
 
-> 현재 진행 중인 핵심 데이터 정제·가치평가 파이프라인과 분리된 수업 과제용 처리 과정입니다.
+> 운영 데이터와 동일한 canonical 규칙을 사용하는 Kafka replay·Spark batch 검증입니다.
 
 ### 1. 데이터·메시지 명세
 
@@ -355,3 +355,85 @@ Apache Parquet + Snappy 압축
 ```
 
 Spark는 여러 개의 `part-*.snappy.parquet` 파일과 작업 완료를 나타내는 `_SUCCESS` 파일을 생성합니다. 작업을 다시 실행하면 기존 결과를 덮어씁니다.
+
+## 로컬 실행
+
+Python 3.12와 Docker Desktop이 필요합니다. 인증정보는 `.env`에만 둡니다.
+
+```bash
+cp .env.example .env
+python -m pip install -e '.[dev,course]'
+docker compose up -d kafka
+```
+
+### 20종목 일봉·1분봉
+
+```bash
+python -m fair_value.jobs.market_price_batch --mode incremental
+python -m fair_value.jobs.market_state_batch --target-date 2026-08-28
+```
+
+두 작업은 재실행해도 canonical key 기준으로 중복을 남기지 않습니다.
+
+### Kafka replay와 Spark batch
+
+```bash
+python -m fair_value.coursework.minute_kafka_producer --trading-date 20260828
+python -m fair_value.coursework.minute_kafka_consumer --expected-count 7540
+docker compose --profile course run --rm spark /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.4 --conf spark.jars.ivy=/tmp/.ivy2 --conf spark.ui.showConsoleProgress=false src/fair_value/coursework/spark_minute_market_batch.py
+```
+
+### 반도체 무역 cycle
+
+```bash
+python -m fair_value.jobs.trade_batch \
+  --mode historical --source un_comtrade --start-date 2015-01-01
+# 관세청 API 활용신청 승인 후
+python -m fair_value.jobs.trade_batch --mode historical --source all --start-date 2015-01-01
+```
+
+실행 전 `.env`에 `FAIR_VALUE_CUSTOMS_API_KEY`와 `FAIR_VALUE_UN_COMTRADE_API_KEY`가 필요합니다.
+
+### Airflow
+
+```bash
+docker compose --profile orchestration up -d airflow
+```
+
+평일 16:20 KST의 20종목 일봉·1분봉 DAG와 매월 16일 17:30 KST의 UN Comtrade
+trade-cycle DAG가 활성 상태입니다. 관세청 수집은 해당 API 활용신청 승인 후
+`--source all`로 전환합니다.
+
+## 5차시 과제: 부하·장애·복구 실험
+
+외부 API에는 부하를 주지 않고 저장된 20종목 1분봉을 격리 Kafka topic에 재생했습니다.
+
+| 실험 | 입력/처리 | 결과 | 시간 |
+|---|---:|---:|---:|
+| 기준 Producer | 7,540 | 전송 7,540 | 0.22초 |
+| 기준 Consumer | 7,540 | 수신 7,540 | 0.24초 |
+| 기준 Spark | 7,540 | Silver 7,540 / feature 20 | 30.69초 |
+| 부하 Producer | 추가 30,160 | 누적 37,700 | 0.24초 |
+| 부하 Consumer | 37,700 | 수신 37,700 | 0.34초 |
+| 부하 Spark | 37,700 | 중복 30,160 제거 / Silver 7,540 | 32.15초 |
+| 잘못된 입력 | 10 | quarantine 10 / 정상 Silver 유지 | 32.32초 |
+| 복구 재실행 | 37,710 | Silver 7,540 / feature 20 | 30.99초 |
+
+제출용 전체 보고서는 `5주차_README.md`에 정리했습니다.
+
+안전하게 재현하고 복구한 장애는 다음과 같습니다.
+
+- Spark 컨테이너의 저장 디렉터리 권한 오류를 수정한 뒤 재실행
+- `price` 누락 이벤트 10건을 정상 데이터와 분리해 quarantine 저장
+- 출력 직전 강제 중단 후 기존 Parquet 보존과 멱등 재실행 확인
+
+복구 전후 검증값은 같았습니다.
+
+```text
+silver_rows=7540
+silver_unique_keys=7540
+feature_rows=20
+quarantine_rows=10
+```
+
+상세 절차와 명령은 `docs/PIPELINE_RELIABILITY_EXPERIMENT.md`에 기록합니다.
